@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Final Pack Line Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1F4; --panel:#FFFFFF; --ink:#13294B; --ink2:#4A5B74; --line:#D3DBE3;
+  --navy:#13294B; --head:#13294B; --headink:#FFFFFF; --headsub:#B9C7D9;
+  --teal:#1F8A8A; --teal-soft:#D3ECEB; --gold:#C99A1E; --gold-soft:#F6EBC8;
+  --coral:#C0533C; --coral-soft:#F5DCD5; --gray:#8A94A3; --gray-soft:#E3E7EC;
+  --track:#E4E9EE; --focus:#C99A1E;
+  --sans:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --cond:"Barlow Semi Condensed","Barlow",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1828; --panel:#15233A; --ink:#E7EDF4; --ink2:#A8B6C9; --line:#2A3B57;
+    --head:#0A1322; --headink:#FFFFFF; --headsub:#8FA2BC;
+    --teal:#3DB4B0; --teal-soft:#16393F; --gold:#E2B640; --gold-soft:#3A3220;
+    --coral:#E2775F; --coral-soft:#3D2522; --gray:#7F8A9B; --gray-soft:#24324A; --track:#22314A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1828; --panel:#15233A; --ink:#E7EDF4; --ink2:#A8B6C9; --line:#2A3B57;
+  --head:#0A1322; --headink:#FFFFFF; --headsub:#8FA2BC;
+  --teal:#3DB4B0; --teal-soft:#16393F; --gold:#E2B640; --gold-soft:#3A3220;
+  --coral:#E2775F; --coral-soft:#3D2522; --gray:#7F8A9B; --gray-soft:#24324A; --track:#22314A;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+header.top{background:var(--head);color:var(--headink);padding:18px 24px 16px;border-bottom:4px solid var(--gold)}
+header.top h1{font-family:var(--cond);font-weight:700;font-size:28px;line-height:1.1;margin:0;letter-spacing:.2px}
+header.top p{margin:4px 0 0;color:var(--headsub);max-width:70ch}
+
+.toolbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 24px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+.btn:hover{filter:brightness(1.05)}
+.toolbar label{color:var(--ink2);font-size:14px}
+.toolbar select{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--panel)}
+.clock{margin-left:auto;display:flex;align-items:center;gap:10px;min-width:240px}
+.clock-text{font-family:var(--cond);font-weight:600;font-size:16px;white-space:nowrap}
+.clock-bar{flex:1;height:8px;background:var(--track);border-radius:4px;overflow:hidden;min-width:80px}
+.clock-bar i{display:block;height:100%;width:0;background:var(--gold)}
+
+.layout{display:grid;gap:18px;padding:18px 24px 40px;max-width:1500px;margin:0 auto;
+  grid-template-columns:minmax(0,1fr);grid-template-areas:"flow" "ctrl" "results"}
+@media (min-width:1000px){
+  .layout{grid-template-columns:350px minmax(0,1fr);grid-template-areas:"ctrl flow" "ctrl results";align-items:start}
+  #ctrl{position:sticky;top:64px;max-height:calc(100vh - 80px);overflow:auto}
+}
+#flow{grid-area:flow} #ctrl{grid-area:ctrl} #results{grid-area:results}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
+h2{font-family:var(--cond);font-weight:600;font-size:20px;margin:0 0 10px}
+h3{font-family:var(--cond);font-weight:600;font-size:17px;margin:0 0 8px}
+
+/* Controls */
+#ctrl .ctrl-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+#ctrl .linkbtn{background:none;border:0;color:var(--teal);font-weight:600;cursor:pointer;padding:4px 0}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:12px 0 6px}
+legend{font-family:var(--cond);font-weight:600;font-size:16px;padding:0 6px 0 0;color:var(--ink)}
+.ctl{margin:6px 0 12px}
+.ctl-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ctl-top label{font-size:14px;color:var(--ink2)}
+.ctl-val{white-space:nowrap;font-size:13px;color:var(--ink2)}
+.ctl-val input{width:64px;text-align:right;border:1px solid var(--line);border-radius:5px;padding:2px 6px;background:var(--panel);font-weight:600;color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--teal);margin:4px 0 0}
+.rng{display:none;gap:12px;font-size:12px;color:var(--ink2);margin-top:2px}
+.rng input{width:58px;border:1px solid var(--line);border-radius:4px;padding:1px 4px;background:var(--panel)}
+body.edit-ranges .rng{display:flex}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:var(--panel);padding:5px 14px;cursor:pointer;font-weight:600;color:var(--ink2)}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
+:root[data-theme="dark"] .seg button[aria-pressed="true"]{background:var(--teal)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{background:var(--teal)}}
+.mode{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0 12px;font-size:14px;color:var(--ink2)}
+.stops-table{width:100%;border-collapse:collapse;font-size:13px}
+.stops-table th{font-weight:500;color:var(--ink2);text-align:left;padding:3px 4px}
+.stops-table td{padding:3px 4px}
+.stops-table input{width:56px;border:1px solid var(--line);border-radius:4px;padding:2px 4px;background:var(--panel);text-align:right}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:8px}
+
+/* Flow diagram */
+.flow{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:stretch}
+@media (max-width:820px){.flow{grid-template-columns:minmax(0,1fr)}}
+.feeds{display:flex;flex-direction:column;gap:10px}
+.feed{display:grid;grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr) 14px minmax(0,1.1fr);align-items:center;gap:4px}
+.feed.erow{grid-template-columns:minmax(0,1fr) 14px minmax(0,2.1fr)}
+.arrow{height:2px;background:var(--line);position:relative}
+.arrow::after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left-color:var(--ink2);border-right:0}
+.mc{border:1px solid var(--line);border-left:5px solid var(--gray);border-radius:6px;padding:8px 10px;background:var(--panel);min-width:0}
+.mc-name{font-family:var(--cond);font-weight:600;font-size:15px;line-height:1.15}
+.mc-state{font-size:12px;font-weight:600;margin-top:2px;color:var(--ink2)}
+.mc-num{font-family:var(--cond);font-weight:700;font-size:22px;line-height:1.1;margin-top:4px}
+.mc-sub{font-size:12px;color:var(--ink2)}
+.mc.st-run{border-left-color:var(--teal)} .mc.st-run .mc-state{color:var(--teal)}
+.mc.st-starved{border-left-color:var(--gold);background:var(--gold-soft)} .mc.st-starved .mc-state{color:var(--ink)}
+.mc.st-blocked,.mc.st-restart{border-left-color:var(--coral);background:var(--coral-soft)} .mc.st-blocked .mc-state,.mc.st-restart .mc-state{color:var(--coral)}
+.mc.st-down,.mc.st-change{border-left-color:var(--gray);background:var(--gray-soft)}
+.buf{min-width:0}
+.buf-name{font-size:12px;color:var(--ink2);line-height:1.2}
+.buf-bar{height:14px;background:var(--track);border-radius:3px;overflow:hidden;margin:4px 0 2px}
+.buf-bar i{display:block;height:100%;width:0;background:var(--teal);transition:width .15s linear}
+.buf-bar.full i{background:var(--coral)}
+.buf-num{font-family:var(--cond);font-weight:600;font-size:14px}
+@media (prefers-reduced-motion:reduce){.buf-bar i{transition:none}}
+
+.bpa{border:2px solid var(--navy);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px;background:var(--panel)}
+:root[data-theme="dark"] .bpa{border-color:var(--teal)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bpa{border-color:var(--teal)}}
+.bpa.st-starved{background:var(--gold-soft)} .bpa.st-blocked{background:var(--coral-soft)} .bpa.st-down{background:var(--gray-soft)}
+.bpa .mc-name{font-size:18px}
+.cases{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin:6px 0 2px}
+.cases.n7{grid-template-columns:repeat(7,1fr)}
+.case{aspect-ratio:1/1.25;border:1.5px solid var(--ink2);border-radius:3px;position:relative;overflow:hidden;background:var(--panel)}
+.case.empty{border-style:dashed;opacity:.5}
+.case i{position:absolute;left:0;right:0;bottom:0;background:var(--gold);height:0}
+.bpa-detail{font-size:13px;color:var(--ink2)}
+
+.outrow{display:grid;grid-template-columns:minmax(0,.8fr) 14px minmax(0,1fr) 14px minmax(0,.8fr) 14px minmax(0,1fr) 14px minmax(0,.8fr) 14px minmax(0,1.1fr);
+  align-items:center;gap:4px;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+@media (max-width:820px){
+  .outrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .outrow .arrow{display:none}
+  .feed{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:8px}
+  .feed.erow{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+  .feed .arrow{display:none}
+}
+.pal-bar{height:6px;background:var(--track);border-radius:3px;overflow:hidden;margin-top:5px}
+.pal-bar i{display:block;height:100%;width:0;background:var(--navy)}
+:root[data-theme="dark"] .pal-bar i{background:var(--teal)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pal-bar i{background:var(--teal)}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2);margin-top:14px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+
+/* Results */
+#results{display:flex;flex-direction:column;gap:18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{border-left:3px solid var(--gold);padding:2px 0 2px 12px}
+.kpi b{display:block;font-family:var(--cond);font-weight:700;font-size:30px;line-height:1.05}
+.kpi span{font-size:13px;color:var(--ink2)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:1150px){.two{grid-template-columns:minmax(0,1fr)}}
+.caprow{display:grid;grid-template-columns:170px minmax(0,1fr) 64px;align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.caprow .bar{height:16px;background:var(--track);border-radius:3px;overflow:hidden}
+.caprow .bar i{display:block;height:100%;background:var(--teal)}
+.caprow.c1 .bar i{background:var(--coral)} .caprow.c2 .bar i{background:var(--gold)}
+.caprow .num{font-family:var(--cond);font-weight:600;text-align:right}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:0 6px;border-radius:3px;margin-left:6px;vertical-align:1px}
+.tag.c1{background:var(--coral-soft);color:var(--coral)} .tag.c2{background:var(--gold-soft);color:var(--ink)}
+.utilrow{display:grid;grid-template-columns:170px minmax(0,1fr);align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.stack{display:flex;height:16px;border-radius:3px;overflow:hidden;background:var(--track)}
+.stack i{display:block;height:100%}
+.stack .r{background:var(--teal)} .stack .s{background:var(--gold)} .stack .b{background:var(--coral)} .stack .d{background:var(--gray)}
+.note{font-size:13px;color:var(--ink2);margin:10px 0 0;max-width:80ch}
+.tablewrap{overflow-x:auto}
+table.buf-t{border-collapse:collapse;width:100%;font-size:14px;min-width:620px}
+.buf-t th{text-align:left;font-weight:500;color:var(--ink2);border-bottom:1px solid var(--line);padding:6px 8px}
+.buf-t td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:top}
+.buf-t td.n{font-family:var(--cond);font-weight:600;white-space:nowrap}
+.short{color:var(--coral);font-weight:600}
+.ok{color:var(--teal);font-weight:600}
+ul.ins{margin:0;padding-left:18px;max-width:85ch}
+ul.ins li{margin:0 0 8px}
+details{font-size:14px;color:var(--ink2)}
+details summary{cursor:pointer;font-weight:600;color:var(--ink)}
+details p{max-width:80ch}
+
+/* Floor layout (matches line sketch) */
+.floor-wrap{overflow-x:auto}
+.floor{position:relative;display:grid;min-width:680px;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:34px;row-gap:22px;
+  grid-template-areas:". . m2 ." ". m1 . ." ". l1 . ." ". . l2 ." "t1 b1 b2 t2" "tb bpa bpa cb" "tp . . er" "cwb . . ." "cw . . ." "pb pal . .";}
+.floor>*{position:relative;z-index:1}
+.floor>.buf{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px;align-self:center}
+.floor>.wires{position:absolute;inset:0;width:100%;height:100%;z-index:0;overflow:visible;color:var(--ink2)}
+.wires path{fill:none;stroke:currentColor;stroke-width:1.6;opacity:.55}
+.wires path.dash{stroke-dasharray:5 4}
+.tote{border:1.5px dashed var(--ink2);border-radius:6px;padding:8px 10px;background:var(--panel)}
+.tote.active{background:var(--gold-soft);border-color:var(--gold)}
+.tote.off{opacity:.4}
+#b-lane0 .buf-bar:not(.full) i{background:#2E9E4F}
+#b-lane1 .buf-bar:not(.full) i{background:#E8822A}
+.wires circle{stroke:var(--panel);stroke-width:1}
+.mc.robot{outline:1.5px dashed var(--ink2);outline-offset:7px}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Final Pack line simulator</h1>
+  <p>Mamata baggers through the palletizer. Set your speeds, run the shift, and see which machine holds the line back and where buffer pays off.</p>
+</header>
+
+<div class="toolbar">
+  <button class="btn primary" id="runBtn">Run</button>
+  <button class="btn" id="resetBtn">Reset</button>
+  <button class="btn" id="fullBtn">Run full shift now</button>
+  <label for="speed">Speed</label>
+  <select id="speed">
+    <option value="1">1x</option><option value="10">10x</option><option value="30">30x</option><option value="50" selected>50x</option>
+    <option value="60">60x</option><option value="120">120x</option><option value="300">300x</option>
+  </select>
+  <label class="check" style="margin:0"><input type="checkbox" id="dotsOn"> Show moving pouches</label>
+  <div class="clock"><span class="clock-text" id="clockText">0:00 of 8:00</span><div class="clock-bar"><i id="clockBar"></i></div></div>
+</div>
+
+<main class="layout">
+  <section id="flow" class="panel" aria-label="Line view">
+    <div class="floor-wrap"><div class="floor" id="floor">
+      <svg class="wires" id="wires" aria-hidden="true"><g id="wireg"></g><g id="dotg"></g></svg>
+      <div class="mc" id="c-m2" style="grid-area:m2"><div class="mc-name">Mamata 2</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">pouches made</div></div>
+      <div class="mc" id="c-m1" style="grid-area:m1"><div class="mc-name">Mamata 1</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">pouches made</div></div>
+      <div class="mc" id="c-l1" style="grid-area:l1"><div class="mc-name">Loma 1</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">pouches passed</div></div>
+      <div class="mc" id="c-l2" style="grid-area:l2"><div class="mc-name">Loma 2</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">pouches passed</div></div>
+      <div class="tote" id="t-0" style="grid-area:t1"><div class="mc-name">Overflow tote 1</div><div class="mc-num">0</div><div class="mc-sub">pouches diverted</div></div>
+      <div class="buf" id="b-lane0" style="grid-area:b1"><div class="buf-name">Mamata 1 belt to BPA</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
+      <div class="buf" id="b-lane1" style="grid-area:b2"><div class="buf-name">Mamata 2 belt to BPA</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
+      <div class="tote" id="t-1" style="grid-area:t2"><div class="mc-name">Overflow tote 2</div><div class="mc-num">0</div><div class="mc-sub">pouches diverted</div></div>
+      <div class="buf" id="b-tapeBuf" style="grid-area:tb"><div class="buf-name">Cases before taper</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
+      <div class="bpa" id="c-bpa" style="grid-area:bpa">
+        <div class="mc-name">BPA Gantry 300</div>
+        <div class="mc-state" id="bpaState">Ready</div>
+        <div class="cases" id="caseGrid"></div>
+        <div class="bpa-detail" id="bpaDetail"></div>
+        <div class="mc-num" id="bpaNum">0</div><div class="mc-sub">cases packed</div>
+      </div>
+      <div class="buf" id="b-caseBuf" style="grid-area:cb"><div class="buf-name">Empty cases waiting at BPA</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
+      <div class="mc" id="c-tape" style="grid-area:tp"><div class="mc-name">Tape machine</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">cases taped</div></div>
+      <div class="mc" id="c-er" style="grid-area:er"><div class="mc-name">Lantech case erector</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">cases made</div></div>
+      <div class="buf" id="b-cwBuf" style="grid-area:cwb"><div class="buf-name">Cases before checkweigher</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
+      <div class="mc" id="c-cw" style="grid-area:cw"><div class="mc-name">Checkweigher + printers</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">cases coded</div></div>
+      <div class="buf" id="b-palBuf" style="grid-area:pb"><div class="buf-name">Cases before palletizer</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
+      <div class="mc robot" id="c-pal" style="grid-area:pal"><div class="mc-name">Robot palletizer</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub" id="palSub">pallets</div><div class="pal-bar"><i id="palBar"></i></div></div>
+    </div></div>
+    <div class="legend">
+      <span style="--c:var(--teal)">Running</span>
+      <span style="--c:var(--gold)">Waiting for product (starved)</span>
+      <span style="--c:var(--coral)">Backed up or restarting (blocked)</span>
+      <span style="--c:var(--gray)">Stopped or changing pallet</span>
+      <span style="--c:#2E9E4F">Mamata 1 pouches</span>
+      <span style="--c:#E8822A">Mamata 2 pouches</span>
+      <span style="--c:#D64545">Empty cases from Lantech</span>
+      <span style="--c:#2F6FD6">Packed cases</span>
+    </div>
+  </section>
+
+  <aside id="ctrl" class="panel" aria-label="Line settings">
+    <div class="ctrl-head">
+      <h2 style="margin:0">Line settings</h2>
+      <button class="linkbtn" id="rangeBtn">Edit min and max</button>
+    </div>
+    <div id="controls"></div>
+    <fieldset>
+      <legend>Random stops</legend>
+      <label class="check"><input type="checkbox" id="stopsOn"> Include jams and short stops</label>
+      <table class="stops-table" id="stopsTable"></table>
+      <p class="note">Stops land at random around these averages. The same pattern repeats each run, so you can compare settings fairly.</p>
+    </fieldset>
+    <button class="linkbtn" id="defaultsBtn">Restore default settings</button>
+  </aside>
+
+  <section id="results">
+    <div class="panel">
+      <h2>Shift results</h2>
+      <div class="kpis" id="kpis"></div>
+    </div>
+    <div class="two">
+      <div class="panel">
+        <h2>Where the line is limited</h2>
+        <div id="capBars"></div>
+        <p class="note">Each step's speed in cases per minute, after its average stops. The red one is your constraint today and the gold one is where the limit moves next.</p>
+      </div>
+      <div class="panel">
+        <h2>How each machine spent its time</h2>
+        <div id="utilBars"></div>
+        <p class="note">The machine that's almost always running and rarely waiting is setting the pace. Gold means it was waiting on the machine before it; red means the machine after it was full.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Buffers</h2>
+      <div class="tablewrap"><table class="buf-t" id="bufTable"></table></div>
+      <p class="note">Buffer earns its keep right before and right after the constraint. Everywhere else, extra buffer mostly hides stops rather than adding output, so fix the stops first.</p>
+    </div>
+    <div class="panel">
+      <h2>What this run is telling you</h2>
+      <ul class="ins" id="insights"></ul>
+    </div>
+    <div class="panel">
+      <details>
+        <summary>How the line is modeled</summary>
+        <p>Each Mamata drops pouches onto a short belt into its Loma. Rejected pouches leave the line at the Loma. Good pouches build up on that lane's belt to the BPA. If a belt fills and its overflow tote is turned on, extra pouches go to the tote and the Mamata keeps running. With the tote turned off, the Loma backs up, then the Mamata stops and needs the restart time before it runs again.</p>
+        <p>The gantry loads a cartridge with 7 or 9 slots. Each pick takes that many pouches from one lane's belt and stacks one pouch in every slot. It alternates lanes and keeps going on one lane if the other is down. After 7 or 8 picks (the customer's pouches per case) the stacks are pushed into the cases together. While the gantry loads the next cartridge, the case side pushes the full cases out to the taper and pulls a new set of empties in, so the gantry only waits if the case swap takes longer than loading the cartridge.</p>
+        <p>The taper, printer + checkweigher, and palletizer each work one case at a time at their set speed. When a pallet is full, the palletizer pauses while the pallet is pushed out and the robot places a new pallet and slip sheet.</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const DT=0.1;
+const STORE='wf-finalpack-sim-v2';
+
+const MACH=[
+  {k:'m1',name:'Mamata 1',stage:'bag'},{k:'m2',name:'Mamata 2',stage:'bag'},
+  {k:'l1',name:'Loma 1',stage:'loma'},{k:'l2',name:'Loma 2',stage:'loma'},
+  {k:'er',name:'Lantech case erector',stage:'er'},{k:'bpa',name:'BPA Gantry 300',stage:'bpa'},
+  {k:'tape',name:'Tape machine',stage:'tape'},{k:'cw',name:'Checkweigher + printers',stage:'cw'},
+  {k:'pal',name:'Robot palletizer',stage:'pal'}];
+const NAME=Object.fromEntries(MACH.map(m=>[m.k,m.name]));
+
+const CONTROLS=[
+  {g:'Mamata baggers',id:'m1Rate',label:'Mamata 1 speed',unit:'bags/min',min:50,max:110,step:1,val:80},
+  {g:'Mamata baggers',id:'m2Rate',label:'Mamata 2 speed',unit:'bags/min',min:50,max:110,step:1,val:80},
+  {g:'Mamata baggers',id:'restart',label:'Restart time after its belt backs up',unit:'sec',min:0,max:30,step:1,val:5},
+  {g:'Loma X-ray + checkweigher',id:'l1Rate',label:'Loma 1 top speed',unit:'bags/min',min:80,max:160,step:1,val:120},
+  {g:'Loma X-ray + checkweigher',id:'l2Rate',label:'Loma 2 top speed',unit:'bags/min',min:80,max:160,step:1,val:120},
+  {g:'Loma X-ray + checkweigher',id:'reject',label:'Pouches rejected',unit:'%',min:0,max:10,step:0.5,val:1},
+  {g:'Belts into the BPA',id:'laneCap',label:'Pouches each belt holds before backing up',unit:'pouches',min:9,max:120,step:1,val:30},
+  {g:'BPA Gantry 300',id:'pickTime',label:'One gantry cycle (pick, drop, back)',unit:'sec',min:1.5,max:6,step:0.1,val:2.9},
+  {g:'BPA Gantry 300',id:'indexTime',label:'Case swap: full cases out, empties in (runs while cartridge loads)',unit:'sec',min:3,max:40,step:1,val:10},
+  {g:'BPA Gantry 300',id:'pushTime',label:'Push stacked pouches from cartridge into cases',unit:'sec',min:1,max:15,step:0.5,val:3},
+  {g:'Lantech case erector',id:'erRate',label:'Case erector speed',unit:'cases/min',min:17,max:25,step:1,val:21},
+  {g:'Lantech case erector',id:'caseCap',label:'Empty cases that can wait at the BPA',unit:'cases',min:9,max:60,step:1,val:18},
+  {g:'Tape machine',id:'tapeRate',label:'Taper speed',unit:'cases/min',min:15,max:25,step:1,val:20},
+  {g:'Tape machine',id:'tapeCap',label:'Cases that can wait before the taper',unit:'cases',min:9,max:60,step:1,val:18},
+  {g:'Checkweigher + printers',id:'cwRate',label:'Checkweigher + printers speed',unit:'cases/min',min:20,max:60,step:1,val:40},
+  {g:'Checkweigher + printers',id:'cwCap',label:'Cases that can wait before the checkweigher',unit:'cases',min:1,max:40,step:1,val:8},
+  {g:'Palletizer',id:'palRate',label:'Palletizer speed',unit:'cases/min',min:8,max:30,step:1,val:20},
+  {g:'Palletizer',id:'palCap',label:'Cases that can wait before the palletizer',unit:'cases',min:1,max:60,step:1,val:12},
+  {g:'Palletizer',id:'cpp',label:'Cases per pallet',unit:'cases',min:40,max:200,step:1,val:140},
+  {g:'Palletizer',id:'palPush',label:'Push full pallet out',unit:'sec',min:0,max:120,step:1,val:15},
+  {g:'Palletizer',id:'palNew',label:'Robot places new pallet + slip sheet',unit:'sec',min:0,max:180,step:1,val:30},
+  {g:'Shift',id:'shift',label:'Shift length',unit:'min',min:30,max:720,step:15,val:480},
+];
+const STOP_DEF={m1:[15,60],m2:[15,60],l1:[60,30],l2:[60,30],er:[20,30],bpa:[30,45],tape:[30,20],cw:[45,30],pal:[60,60]};
+
+function defaults(){
+  const P={vals:{},mins:{},maxs:{},pickN:9,perCase:8,stopsOn:true,overflow:[true,true],stops:JSON.parse(JSON.stringify(STOP_DEF))};
+  CONTROLS.forEach(c=>{P.vals[c.id]=c.val;P.mins[c.id]=c.min;P.maxs[c.id]=c.max;});
+  return P;
+}
+let P=defaults();
+try{const s=JSON.parse(localStorage.getItem(STORE)||'null');
+  if(s){['vals','mins','maxs','stops'].forEach(k=>Object.assign(P[k],s[k]||{}));
+    if(s.pickN===7||s.pickN===9)P.pickN=s.pickN; if(s.perCase===7||s.perCase===8)P.perCase=s.perCase;
+    if(typeof s.stopsOn==='boolean')P.stopsOn=s.stopsOn;
+    if(Array.isArray(s.overflow)&&s.overflow.length===2)P.overflow=s.overflow.map(Boolean);}
+}catch(e){}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(P))}catch(e){}}
+
+/* ---------- Controls UI ---------- */
+function buildControls(){
+  let h='',g=null;
+  CONTROLS.forEach(c=>{
+    if(c.g!==g){
+      if(g)h+='</fieldset>';
+      h+=`<fieldset><legend>${c.g}</legend>`; g=c.g;
+      if(g==='Belts into the BPA'){
+        h+=`<label class="check"><input type="checkbox" id="ovf0"> Mamata 1 belt overflows to a tote when full</label><label class="check"><input type="checkbox" id="ovf1"> Mamata 2 belt overflows to a tote when full</label>`;
+      }
+      if(g==='BPA Gantry 300'){
+        h+=`<div class="mode"><span>Cases filled at once</span><span class="seg" data-mode="pickN"><button data-v="7">7</button><button data-v="9">9</button></span></div>`;
+        h+=`<div class="mode"><span>Pouches per case (customer)</span><span class="seg" data-mode="perCase"><button data-v="7">7</button><button data-v="8">8</button></span></div>`;
+      }
+    }
+    h+=`<div class="ctl"><div class="ctl-top"><label for="r-${c.id}">${c.label}</label>
+      <span class="ctl-val"><input type="number" id="n-${c.id}" step="${c.step}" aria-label="${c.label}, ${c.unit}"> ${c.unit}</span></div>
+      <input type="range" id="r-${c.id}" step="${c.step}">
+      <div class="rng"><label>Min <input type="number" id="mn-${c.id}" step="${c.step}"></label><label>Max <input type="number" id="mx-${c.id}" step="${c.step}"></label></div></div>`;
+  });
+  h+='</fieldset>';
+  $('#controls').innerHTML=h;
+  CONTROLS.forEach(c=>{
+    const r=$('#r-'+c.id),n=$('#n-'+c.id),mn=$('#mn-'+c.id),mx=$('#mx-'+c.id);
+    r.addEventListener('input',()=>{setVal(c.id,+r.value)});
+    n.addEventListener('change',()=>{setVal(c.id,+n.value)});
+    mn.addEventListener('change',()=>{let v=+mn.value; if(!isFinite(v))return; if(v>=P.maxs[c.id])v=P.maxs[c.id]-c.step; P.mins[c.id]=v; setVal(c.id,P.vals[c.id]);});
+    mx.addEventListener('change',()=>{let v=+mx.value; if(!isFinite(v))return; if(v<=P.mins[c.id])v=P.mins[c.id]+c.step; P.maxs[c.id]=v; setVal(c.id,P.vals[c.id]);});
+  });
+  document.querySelectorAll('.seg').forEach(seg=>{
+    seg.addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; P[seg.dataset.mode]=+b.dataset.v; syncControls(); changed();});
+  });
+  let st='<tr><th>Machine</th><th>About every (min)</th><th>Lasts about (sec)</th></tr>';
+  MACH.forEach(m=>{st+=`<tr><td>${m.name}</td><td><input type="number" min="1" id="sb-${m.k}" aria-label="${m.name} minutes between stops"></td><td><input type="number" min="0" id="sd-${m.k}" aria-label="${m.name} seconds per stop"></td></tr>`;});
+  $('#stopsTable').innerHTML=st;
+  MACH.forEach(m=>{
+    $('#sb-'+m.k).addEventListener('change',e=>{const v=Math.max(1,+e.target.value||1);P.stops[m.k][0]=v;changed();});
+    $('#sd-'+m.k).addEventListener('change',e=>{const v=Math.max(0,+e.target.value||0);P.stops[m.k][1]=v;changed();});
+  });
+  $('#stopsOn').addEventListener('change',e=>{P.stopsOn=e.target.checked;changed();});
+  [0,1].forEach(i=>$('#ovf'+i).addEventListener('change',e=>{P.overflow[i]=e.target.checked;changed();}));
+}
+function setVal(id,v){
+  const c=CONTROLS.find(x=>x.id===id);
+  if(!isFinite(v))v=P.vals[id];
+  v=Math.min(P.maxs[id],Math.max(P.mins[id],v));
+  v=Math.round(v/c.step)*c.step; v=+v.toFixed(2);
+  P.vals[id]=v; syncControls(); changed();
+}
+function syncControls(){
+  CONTROLS.forEach(c=>{
+    const r=$('#r-'+c.id); r.min=P.mins[c.id]; r.max=P.maxs[c.id]; r.value=P.vals[c.id];
+    $('#n-'+c.id).value=P.vals[c.id]; $('#mn-'+c.id).value=P.mins[c.id]; $('#mx-'+c.id).value=P.maxs[c.id];
+  });
+  document.querySelectorAll('.seg').forEach(seg=>{
+    seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===P[seg.dataset.mode])));
+  });
+  MACH.forEach(m=>{$('#sb-'+m.k).value=P.stops[m.k][0];$('#sd-'+m.k).value=P.stops[m.k][1];});
+  $('#stopsOn').checked=P.stopsOn;
+  [0,1].forEach(i=>{$('#ovf'+i).checked=P.overflow[i];});
+  $('#stopsTable').style.opacity=P.stopsOn?1:.45;
+}
+function changed(){save(); S=newSim(); renderAll();}
+
+/* ---------- Simulation ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function expo(rng,mean){return mean<=0?0:-mean*Math.log(1-rng())}
+const BUFS=['lane0','lane1','caseBuf','tapeBuf','cwBuf','palBuf'];
+
+function newSim(){
+  const rng=mulberry32(20261009);
+  const S={t:0,end:P.vals.shift*60,rng,belt:[0,0],beltCap:6,lane:[0,0],caseBuf:0,tapeBuf:0,cwBuf:0,palBuf:0,
+    prog:{},st:{},stat:{},stop:{},mam:[{blocked:false,restartUntil:0},{blocked:false,restartUntil:0}],
+    bpa:{phase:'ready',timer:0,picks:0,next:0,last:null,wait:null},bcase:{phase:'needCases',timer:0},pal:{on:0,changeUntil:0},
+    toteAt:[-99,-99],c:{bagged:[0,0],passed:[0,0],tote:[0,0],picks:[0,0],loaded:0,rejected:0,erected:0,packed:0,taped:0,coded:0,palCases:0,pallets:0},
+    bpaWaitCases:0,bpaWaitPouches:0,buf:{}};
+  MACH.forEach(m=>{
+    S.prog[m.k]=0;S.st[m.k]='idle';S.stat[m.k]={run:0,starved:0,blocked:0,down:0};
+    const[b,d]=P.stops[m.k];
+    S.stop[m.k]={until:-1,between:b*60,dur:d,nextAt:P.stopsOn?expo(rng,b*60):Infinity,count:0};
+  });
+  BUFS.forEach(b=>S.buf[b]={sum:0,max:0,full:0});
+  return S;
+}
+function bufVal(S,b){return b==='lane0'?S.lane[0]:b==='lane1'?S.lane[1]:S[b];}
+function bufCap(b){const v=P.vals;return b==='lane0'||b==='lane1'?v.laneCap:b==='caseBuf'?v.caseCap:b==='tapeBuf'?v.tapeCap:b==='cwBuf'?v.cwCap:v.palCap;}
+
+function step(S,dt){
+  const v=P.vals,N=P.pickN,PC=P.perCase,t=S.t;
+  for(const m of MACH){const s=S.stop[m.k]; if(t>=s.nextAt){s.until=t+expo(S.rng,s.dur);s.nextAt=s.until+expo(S.rng,s.between);s.count++;}}
+  const dn=k=>t<S.stop[k].until;
+  const rec=(k,s)=>{S.st[k]=s;const map={run:'run',starved:'starved',blocked:'blocked',restart:'blocked',down:'down',change:'down'};S.stat[k][map[s]]+=dt;};
+  const flow=(k,rate,inOk,outOk,move)=>{
+    if(dn(k))return'down'; if(!inOk)return'starved'; if(!outOk)return'blocked';
+    S.prog[k]+=rate/60*dt; if(S.prog[k]>=1){S.prog[k]-=1;move();} return'run';};
+
+  // Palletizer
+  let s;
+  if(dn('pal'))s='down';
+  else if(t<S.pal.changeUntil)s='change';
+  else if(S.palBuf<1)s='starved';
+  else{s='run';S.prog.pal+=v.palRate/60*dt;
+    if(S.prog.pal>=1){S.prog.pal-=1;S.palBuf--;S.c.palCases++;S.pal.on++;
+      if(S.pal.on>=v.cpp){S.pal.on=0;S.c.pallets++;S.pal.changeUntil=t+v.palPush+v.palNew;}}}
+  rec('pal',s);
+  rec('cw',flow('cw',v.cwRate,S.cwBuf>=1,S.palBuf<v.palCap,()=>{S.cwBuf--;S.palBuf++;S.c.coded++;}));
+  rec('tape',flow('tape',v.tapeRate,S.tapeBuf>=1,S.cwBuf<v.cwCap,()=>{S.tapeBuf--;S.cwBuf++;S.c.taped++;}));
+
+  // BPA
+  // Gantry keeps loading the cartridge while the case side swaps cases in parallel
+  const b=S.bpa,cs=S.bcase; s=null; b.wait=null;
+  if(dn('bpa'))s='down';
+  else{
+    if(cs.phase==='swap'){cs.timer-=dt;if(cs.timer<=0)cs.phase='ready';}
+    if(cs.phase==='filled'&&S.tapeBuf+N<=v.tapeCap){S.tapeBuf+=N;S.c.packed+=N;cs.phase='needCases';}
+    if(cs.phase==='needCases'&&S.caseBuf>=N){S.caseBuf-=N;S.c.loaded+=N;cs.phase='swap';cs.timer=v.indexTime;}
+    if(b.phase==='push'){b.timer-=dt;s='run';if(b.timer<=0){b.phase='ready';b.picks=0;cs.phase='filled';}}
+    else if(b.phase==='pick'){b.timer-=dt;s='run';if(b.timer<=0){b.picks++;b.phase=b.picks>=PC?'full':'ready';}}
+    if(!s&&b.phase==='full'){
+      if(cs.phase==='ready'){b.phase='push';b.timer=v.pushTime;s='run';}
+      else if(cs.phase==='filled'){s='blocked';}
+      else if(cs.phase==='needCases'){s='starved';b.wait='cases';S.bpaWaitCases+=dt;}
+      else{s='run';b.wait='swap';}
+    }
+    if(!s&&b.phase==='ready'){
+      let ln=-1; if(S.lane[b.next]>=N)ln=b.next; else if(S.lane[1-b.next]>=N)ln=1-b.next;
+      if(ln<0){s='starved';b.wait='pouches';S.bpaWaitPouches+=dt;}
+      else{S.lane[ln]-=N;S.c.picks[ln]++;b.last=ln;b.next=1-ln;b.phase='pick';b.timer=v.pickTime;s='run';}
+    }
+  }
+  rec('bpa',s);
+
+  rec('er',flow('er',v.erRate,true,S.caseBuf<v.caseCap,()=>{S.caseBuf++;S.c.erected++;}));
+  [0,1].forEach(i=>{
+    const k='l'+(i+1);
+    const ovf=P.overflow[i];
+    rec(k,flow(k,v[k+'Rate'],S.belt[i]>=1,ovf||S.lane[i]<v.laneCap,()=>{S.belt[i]--;
+      if(S.rng()<v.reject/100)S.c.rejected++;
+      else if(S.lane[i]<v.laneCap){S.lane[i]++;S.c.passed[i]++;}
+      else{S.c.tote[i]++;S.toteAt[i]=S.t;}}));
+  });
+  [0,1].forEach(i=>{
+    const k='m'+(i+1),M=S.mam[i];let st;
+    if(dn(k))st='down';
+    else if(S.belt[i]>=S.beltCap){st='blocked';M.blocked=true;}
+    else if(M.blocked){M.blocked=false;M.restartUntil=t+v.restart;st=v.restart>0?'restart':'run';}
+    else if(t<M.restartUntil)st='restart';
+    else st='run';
+    if(st==='run'){S.prog[k]+=v[k+'Rate']/60*dt;if(S.prog[k]>=1){S.prog[k]-=1;S.belt[i]++;S.c.bagged[i]++;}}
+    rec(k,st);
+  });
+  BUFS.forEach(bn=>{const x=bufVal(S,bn),B=S.buf[bn];B.sum+=x*dt;if(x>B.max)B.max=x;if(x>=bufCap(bn))B.full+=dt;});
+  S.t+=dt;
+}
+
+/* ---------- Analysis ---------- */
+function avail(k){if(!P.stopsOn)return 1;const[b,d]=P.stops[k];return b*60/(b*60+d);}
+function capacity(){
+  const v=P.vals,N=P.pickN,PC=P.perCase,y=1-v.reject/100;
+  const st=[
+    {key:'bag',name:'Mamata baggers',cpm:(v.m1Rate*avail('m1')+v.m2Rate*avail('m2'))*y/PC},
+    {key:'loma',name:'Loma X-ray + checkweighers',cpm:(v.l1Rate*avail('l1')+v.l2Rate*avail('l2'))*y/PC},
+    {key:'bpa',name:'BPA Gantry 300',cpm:60*N/(Math.max(PC*v.pickTime,v.indexTime)+v.pushTime)*avail('bpa')},
+    {key:'er',name:'Lantech case erector',cpm:v.erRate*avail('er')},
+    {key:'tape',name:'Tape machine',cpm:v.tapeRate*avail('tape')},
+    {key:'cw',name:'Checkweigher + printers',cpm:v.cwRate*avail('cw')},
+    {key:'pal',name:'Robot palletizer',cpm:v.cpp/(v.cpp/v.palRate+(v.palPush+v.palNew)/60)*avail('pal')},
+  ];
+  return{stages:st,sorted:[...st].sort((a,b)=>a.cpm-b.cpm)};
+}
+function simBottleneck(S){
+  const t=Math.max(S.t,1); let best=null;
+  const dumping=S.c.tote[0]+S.c.tote[1]>0;
+  MACH.forEach(m=>{if(dumping&&(m.stage==='bag'||m.stage==='loma'))return;const s=S.stat[m.k];const busy=(s.run+s.down)/t;if(!best||busy>best.busy)best={k:m.k,name:m.name,stage:m.stage,busy,wait:(s.starved+s.blocked)/t};});
+  const pair={m1:'m2',m2:'m1',l1:'l2',l2:'l1'}[best.k];
+  if(pair){const s=S.stat[pair];const busy2=(s.run+s.down)/t;if(Math.abs(busy2-best.busy)<0.03)best.name=best.stage==='bag'?'the Mamata baggers':'the Lomas';}
+  return best;
+}
+function bufferRows(cap){
+  const v=P.vals,N=P.pickN,d=k=>P.stopsOn?P.stops[k][1]:0,line=cap.sorted[0].cpm/60;
+  const laneRate=i=>Math.min(v['m'+(i+1)+'Rate'],v['l'+(i+1)+'Rate'])*(1-v.reject/100)/60;
+  return[
+    {id:'lane0',name:'Mamata 1 belt to BPA',unit:'pouches',up:'bag',down:'bpa',sugg:Math.ceil(N+laneRate(0)*(d('bpa')+v.pushTime)),why:'keeps Mamata 1 running through a typical BPA stop plus a cartridge push'},
+    {id:'lane1',name:'Mamata 2 belt to BPA',unit:'pouches',up:'bag',down:'bpa',sugg:Math.ceil(N+laneRate(1)*(d('bpa')+v.pushTime)),why:'keeps Mamata 2 running through a typical BPA stop plus a cartridge push'},
+    {id:'caseBuf',name:'Empty cases at BPA',unit:'cases',up:'er',down:'bpa',sugg:Math.ceil(N+line*d('er')),why:'covers one full set for the BPA plus enough to ride through a typical case erector stop'},
+    {id:'tapeBuf',name:'Cases before taper',unit:'cases',up:'bpa',down:'tape',sugg:Math.ceil(N+line*d('tape')),why:'leaves room for a full set pushed out by the BPA plus a typical taper stop'},
+    {id:'cwBuf',name:'Cases before checkweigher',unit:'cases',up:'tape',down:'cw',sugg:Math.max(2,Math.ceil(line*d('cw'))),why:'rides through a typical checkweigher or printer stop'},
+    {id:'palBuf',name:'Cases before palletizer',unit:'cases',up:'cw',down:'pal',sugg:Math.max(2,Math.ceil(line*Math.max(d('pal'),v.palPush+v.palNew))),why:'rides through a pallet change without stopping the cases behind it'},
+  ].map(r=>({...r,cap:bufCap(r.id)}));
+}
+
+/* ---------- Rendering ---------- */
+const STATE_TEXT={idle:'Ready',run:'Running',starved:'Waiting for product',blocked:'Backed up',restart:'Restarting',down:'Stopped',change:'Changing pallet'};
+const f0=x=>Math.round(x).toLocaleString(), f1=x=>(Math.round(x*10)/10).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+const pct=x=>Math.round(x*100)+'%';
+const hm=s=>{const m=Math.floor(s/60);return Math.floor(m/60)+':'+String(m%60).padStart(2,'0');};
+
+function setCard(id,state,num,stateText){
+  const el=$('#c-'+id); el.className=(id==='bpa'?'bpa':'mc')+' st-'+state;
+  const stEl=id==='bpa'?$('#bpaState'):el.querySelector('.mc-state'); stEl.textContent=stateText||STATE_TEXT[state];
+  const n=id==='bpa'?$('#bpaNum'):el.querySelector('.mc-num'); n.textContent=f0(num);
+}
+function setBuf(id,val,cap,unit){
+  const el=$('#b-'+id); const bar=el.querySelector('.buf-bar');
+  bar.querySelector('i').style.width=Math.min(100,val/cap*100)+'%'; bar.classList.toggle('full',val>=cap);
+  el.querySelector('.buf-num').textContent=`${f0(val)} / ${f0(cap)} ${unit}`;
+}
+const WIRES=[['c-m1','b','c-l1','t'],['c-l1','b','b-lane0','t'],['c-m2','b','c-l2','t'],['c-l2','b','b-lane1','t'],
+  ['b-lane0','b','c-bpa','t',1],['b-lane1','b','c-bpa','t',1],['b-lane0','l','t-0','r',0,1],['b-lane1','r','t-1','l',0,1],
+  ['c-er','t','b-caseBuf','b'],['b-caseBuf','l','c-bpa','r'],['c-bpa','l','b-tapeBuf','r'],['b-tapeBuf','b','c-tape','t'],
+  ['c-tape','b','b-cwBuf','t'],['b-cwBuf','b','c-cw','t'],['c-cw','b','b-palBuf','t'],['b-palBuf','r','c-pal','l']];
+function drawWires(){
+  const fl=$('#floor'),svg=$('#wires'); if(!fl)return; const fr=fl.getBoundingClientRect();
+  const pt=(el,side)=>{const r=el.getBoundingClientRect();return[(side==='l'?r.left:side==='r'?r.right:r.left+r.width/2)-fr.left,(side==='t'?r.top:side==='b'?r.bottom:r.top+r.height/2)-fr.top];};
+  let h='<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" stroke="none"/></marker></defs>';
+  WPTS=[];
+  WIRES.forEach(([a,sa,b,sb,keepX,dash],i)=>{const A=document.getElementById(a),B=document.getElementById(b);if(!A||!B)return;
+    let[x1,y1]=pt(A,sa),[x2,y2]=pt(B,sb); if(keepX)x2=x1;
+    let pts; if(sa==='t'||sa==='b'){const my=(y1+y2)/2;pts=[[x1,y1],[x1,my],[x2,my],[x2,y2]];}else{const mx=(x1+x2)/2;pts=[[x1,y1],[mx,y1],[mx,y2],[x2,y2]];}
+    WPTS[i]=pts;
+    h+=`<path d="M${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L')}" marker-end="url(#ah)"${dash?' class="dash"':''}/>`;});
+  svg.setAttribute('viewBox',`0 0 ${fr.width} ${fr.height}`); $('#wireg').innerHTML=h;
+}
+/* Moving pouches: green = Mamata 1, orange = Mamata 2, blue = packed cases */
+const DOTC={g:'#2E9E4F',o:'#E8822A',b:'#2F6FD6',r:'#D64545'};
+const ROUTES=[
+  {w:[0,1],c:'g',src:()=>S.c.bagged[0]},{w:[4],c:'g',big:1,src:()=>S.c.picks[0]},{w:[6],c:'g',src:()=>S.c.tote[0]},
+  {w:[2,3],c:'o',src:()=>S.c.bagged[1]},{w:[5],c:'o',big:1,src:()=>S.c.picks[1]},{w:[7],c:'o',src:()=>S.c.tote[1]},
+  {w:[8],c:'r',src:()=>S.c.erected},{w:[9],c:'r',big:1,src:()=>S.c.loaded},
+  {w:[10],c:'b',big:1,src:()=>S.c.packed},{w:[11,12],c:'b',big:1,src:()=>S.c.taped},{w:[13,14],c:'b',big:1,src:()=>S.c.coded},{w:[15],c:'b',big:1,src:()=>S.c.palCases}];
+let WPTS=[],dots=[],lastA=0;
+let dotsOn=!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+ROUTES.forEach(r=>{r.prev=0;r.pend=0;r.last=0;});
+function syncDots(){ROUTES.forEach(r=>{r.prev=r.src();r.pend=0;});dots=[];}
+function spawnDots(now){
+  ROUTES.forEach(r=>{const v=r.src(),d=v-r.prev;r.prev=v;if(!dotsOn||d<=0)return;
+    r.pend=Math.min(3,r.pend+d);
+    if(now-r.last>90){r.pend--;r.last=now;dots.push({r,dist:0});}});
+}
+function routePts(r){let pts=[];r.w.forEach(i=>{if(WPTS[i])pts=pts.concat(WPTS[i]);});return pts;}
+function posAt(pts,dist){for(let i=1;i<pts.length;i++){const[x1,y1]=pts[i-1],[x2,y2]=pts[i];const L=Math.hypot(x2-x1,y2-y1);
+  if(dist<=L)return L?[x1+(x2-x1)*dist/L,y1+(y2-y1)*dist/L]:[x2,y2];dist-=L;}return null;}
+function animDots(ts){
+  let dt=lastA?Math.min(0.1,(ts-lastA)/1000):0;lastA=ts;if(!running)dt=0;
+  const g=document.getElementById('dotg');
+  if(g){
+    if(!dotsOn||!dots.length){if(g.firstChild)g.innerHTML='';}
+    else{let h='';dots=dots.filter(d=>{d.dist+=170*dt;const p=posAt(routePts(d.r),d.dist);if(!p)return false;
+      h+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${d.r.big?5:3.5}" fill="${DOTC[d.r.c]}"/>`;return true;});
+      g.innerHTML=h;}
+  }
+  requestAnimationFrame(animDots);
+}
+window.addEventListener('resize',drawWires);
+function renderLive(){
+  [0,1].forEach(i=>{const el=$('#t-'+i);el.querySelector('.mc-num').textContent=f0(S.c.tote[i]);el.classList.toggle('off',!P.overflow[i]);el.classList.toggle('active',P.overflow[i]&&S.t-S.toteAt[i]<3);});
+  const v=P.vals,N=P.pickN,PC=P.perCase;
+  $('#clockText').textContent=`${hm(S.t)} of ${hm(S.end)}`;
+  $('#clockBar').style.width=Math.min(100,S.t/S.end*100)+'%';
+  setCard('m1',S.st.m1,S.c.bagged[0]); setCard('m2',S.st.m2,S.c.bagged[1]);
+  setCard('l1',S.st.l1,S.c.passed[0]); setCard('l2',S.st.l2,S.c.passed[1]);
+  setCard('er',S.st.er,S.c.erected); setCard('tape',S.st.tape,S.c.taped); setCard('cw',S.st.cw,S.c.coded);
+  setCard('pal',S.st.pal,S.c.pallets); $('#palSub').textContent=`pallets, ${S.pal.on} of ${v.cpp} cases on this one`;
+  $('#palBar').style.width=(S.pal.on/v.cpp*100)+'%';
+  const b=S.bpa; let txt=STATE_TEXT[S.st.bpa];
+  if(S.st.bpa==='starved')txt=b.wait==='cases'?'Waiting for empty cases':'Waiting for pouches';
+  if(S.st.bpa==='blocked')txt='Can\'t push cases out, taper infeed full';
+  if(S.st.bpa==='run')txt=b.phase==='push'?'Pushing stacks into cases':b.wait==='swap'?'Cartridge full, waiting on case swap':`Loading cartridge from Mamata ${b.last+1} belt`;
+  setCard('bpa',S.st.bpa,S.c.packed,txt);
+  setBuf('lane0',S.lane[0],v.laneCap,'pouches'); setBuf('lane1',S.lane[1],v.laneCap,'pouches');
+  setBuf('caseBuf',S.caseBuf,v.caseCap,'cases'); setBuf('tapeBuf',S.tapeBuf,v.tapeCap,'cases');
+  setBuf('cwBuf',S.cwBuf,v.cwCap,'cases'); setBuf('palBuf',S.palBuf,v.palCap,'cases');
+  const grid=$('#caseGrid'); grid.className='cases'+(N===7?' n7':'');
+  if(grid.children.length!==N){grid.innerHTML='<div class="case"><i></i></div>'.repeat(N);}
+  const loaded=b.phase!=='needCases'||S.st.bpa==='idle'&&false;
+  let filled=(b.phase==='full'||b.phase==='push')?PC:b.picks; if(b.phase==='pick'&&v.pickTime>0)filled=b.picks+Math.min(1,1-b.timer/v.pickTime);
+  [...grid.children].forEach(c=>{c.classList.remove('empty');c.firstChild.style.height=(filled/PC*100)+'%';});
+  const caseTxt={needCases:'waiting for empties',swap:'swapping',ready:'empties in place',filled:'full, waiting for room at the taper'}[S.bcase.phase];
+  $('#bpaDetail').textContent=`Cartridge: ${Math.min(PC,Math.floor(filled))} of ${PC} pouches stacked in each of ${N} slots. Cases: ${caseTxt}.`;
+}
+function renderResults(){
+  const v=P.vals,PC=P.perCase,t=S.t,cap=capacity();
+  const hrs=t/3600, cph=hrs>0?S.c.palCases/hrs:0, bagMax=(v.m1Rate+v.m2Rate)/PC*60;
+  const k=[
+    [f0(S.c.palCases),'cases palletized'],[t>60?f0(cph):'–','cases per hour'],[f0(S.c.pallets),'pallets finished'],
+    [t>60?pct(cph/bagMax):'–','of what the Mamatas could make at set speeds'],[f0(S.c.rejected),'pouches rejected'],[f0(S.c.tote[0]+S.c.tote[1]),'pouches sent to overflow totes']];
+  $('#kpis').innerHTML=k.map(([a,b])=>`<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join('');
+  const maxC=Math.max(...cap.stages.map(s=>s.cpm));
+  const c1=cap.sorted[0].key,c2=cap.sorted[1].key;
+  $('#capBars').innerHTML=cap.stages.map(s=>{const cls=s.key===c1?'c1':s.key===c2?'c2':'';
+    const tag=s.key===c1?'<span class="tag c1">Constraint</span>':s.key===c2?'<span class="tag c2">Next</span>':'';
+    return`<div class="caprow ${cls}"><span>${s.name}${tag}</span><span class="bar"><i style="width:${s.cpm/maxC*100}%"></i></span><span class="num">${f1(s.cpm)}</span></div>`;}).join('');
+  $('#utilBars').innerHTML=MACH.map(m=>{const s=S.stat[m.k],T=Math.max(t,1e-9);
+    if(t<1)return`<div class="utilrow"><span>${m.name}</span><span class="stack"></span></div>`;
+    const seg=(c,x,lbl)=>x>0?`<i class="${c}" style="width:${x/T*100}%" title="${lbl} ${pct(x/T)}"></i>`:'';
+    return`<div class="utilrow"><span>${m.name}</span><span class="stack" aria-label="${m.name}: running ${pct(s.run/T)}, waiting ${pct(s.starved/T)}, backed up ${pct(s.blocked/T)}, stopped ${pct(s.down/T)}">${seg('r',s.run,'Running')}${seg('s',s.starved,'Waiting')}${seg('b',s.blocked,'Backed up')}${seg('d',s.down,'Stopped')}</span></div>`;}).join('');
+  const rows=bufferRows(cap);
+  $('#bufTable').innerHTML='<tr><th>Buffer</th><th>Holds now</th><th>Average / most seen</th><th>Time full</th><th>Suggested</th></tr>'+rows.map(r=>{
+    const B=S.buf[r.id],near=r.up===c1||r.down===c1;
+    const sug=r.cap>=r.sugg?`<span class="ok">${r.sugg} is enough</span>`:`<span class="short">About ${r.sugg}</span>`;
+    return`<tr><td>${r.name}${near?'<span class="tag c1">Next to constraint</span>':''}</td><td class="n">${r.cap} ${r.unit}</td>
+      <td class="n">${t>1?f1(B.sum/t):'–'} / ${t>1?B.max:'–'}</td><td class="n">${t>1?pct(B.full/t):'–'}</td><td>${sug}<br><span style="font-size:12px;color:var(--ink2)">Sized so it ${r.why}.</span></td></tr>`;}).join('');
+  $('#insights').innerHTML=insights(cap,rows).map(x=>`<li>${x}</li>`).join('');
+}
+function insights(cap,rows){
+  const v=P.vals,PC=P.perCase,t=S.t,out=[];
+  const[c1,c2]=cap.sorted;
+  out.push(`On paper the slowest step is <b>${c1.name}</b> at ${f1(c1.cpm)} cases/min. Next in line is <b>${c2.name}</b> at ${f1(c2.cpm)} cases/min, so speeding up ${c1.name} only adds output until you reach about ${f1(c2.cpm)} cases/min.`);
+  if(t<120){out.push('Run the shift (or press "Run full shift now") to see how stops and buffers play out.');return out;}
+  const cph=S.c.palCases/(t/3600),bagMax=(v.m1Rate+v.m2Rate)/PC*60;
+  out.push(`The line palletized about <b>${f0(cph)} cases an hour</b>. At their set speeds the Mamatas could feed ${f0(bagMax)} cases an hour, so you got ${pct(cph/bagMax)} of that.`);
+  const tot=S.c.tote[0]+S.c.tote[1],made=S.c.bagged[0]+S.c.bagged[1];
+  if(tot>0)out.push(`<b>${f0(tot)} pouches</b> (${pct(tot/Math.max(1,made))} of what the Mamatas made) went to the overflow totes. That keeps the baggers running, but each one is hand rework, and it means the line after the belts can't keep up with the baggers at these speeds.`);
+  const bn=simBottleneck(S);
+  out.push(`In this run <b>${bn.name}</b> ${/^the /.test(bn.name)?'were':'was'} busy ${pct(bn.busy)} of the shift and waited only ${pct(bn.wait)} of it. That's where today's limit is.`+(bn.stage!==c1.key?' It differs from the paper answer because stops and buffer sizes are costing time there.':''));
+  const sb=S.stat.bpa;
+  if(S.bpaWaitCases/t>0.04)out.push(`The BPA waited on empty cases ${pct(S.bpaWaitCases/t)} of the shift. Speed up the Lantech or let more empty cases queue at the BPA.`);
+  if(S.bpaWaitPouches/t>0.08)out.push(`The BPA waited on pouches ${pct(S.bpaWaitPouches/t)} of the shift, so the gantry has spare capacity and the baggers are setting the pace.`);
+  if(sb.blocked/t>0.04)out.push(`The BPA couldn't push full cases out ${pct(sb.blocked/t)} of the shift because the taper infeed was full.`);
+  ['m1','m2'].forEach(k=>{const x=S.stat[k].blocked/t;if(x>0.04)out.push(`${NAME[k]} was stopped or restarting ${pct(x)} of the shift because its belt backed up. Each of those stops also costs the ${v.restart} sec restart.`);});
+  if(S.stat.cw.blocked/t>0.04)out.push(`Cases backed up behind the palletizer ${pct(S.stat.cw.blocked/t)} of the shift. Pallet changes are the usual cause.`);
+  rows.filter(r=>r.cap<r.sugg&&(r.up===c1.key||r.down===c1.key)).forEach(r=>out.push(`Next to the constraint, the ${r.name} buffer holds ${r.cap} ${r.unit}. About ${r.sugg} ${r.unit} ${r.why}.`));
+  return out;
+}
+function renderAll(){renderLive();renderResults();drawWires();}
+
+/* ---------- Run loop ---------- */
+let S=newSim(),running=false,lastTs=0,lastRes=0,carry=0;
+function setRunBtn(){$('#runBtn').textContent=running?'Pause':(S.t>0&&S.t<S.end?'Resume':'Run');}
+function loop(ts){
+  if(!running)return;
+  const real=lastTs?Math.min(0.1,(ts-lastTs)/1000):0; lastTs=ts;
+  carry+=real*(+$('#speed').value);
+  while(carry>=DT&&S.t<S.end){step(S,DT);carry-=DT;}
+  renderLive();spawnDots(ts);
+  if(ts-lastRes>400){renderResults();lastRes=ts;}
+  if(S.t>=S.end){running=false;setRunBtn();renderResults();return;}
+  requestAnimationFrame(loop);
+}
+$('#runBtn').addEventListener('click',()=>{
+  if(S.t>=S.end)S=newSim();
+  running=!running;setRunBtn();
+  if(running){lastTs=0;carry=0;requestAnimationFrame(loop);}
+});
+$('#resetBtn').addEventListener('click',()=>{running=false;S=newSim();syncDots();setRunBtn();renderAll();});
+$('#fullBtn').addEventListener('click',()=>{running=false;S=newSim();while(S.t<S.end)step(S,DT);syncDots();setRunBtn();renderAll();});
+$('#rangeBtn').addEventListener('click',()=>{const on=document.body.classList.toggle('edit-ranges');$('#rangeBtn').textContent=on?'Hide min and max':'Edit min and max';});
+$('#defaultsBtn').addEventListener('click',()=>{P=defaults();syncControls();changed();});
+
+buildControls();syncControls();
+const _changed=changed;
+changed=function(){_changed();syncDots();setRunBtn();if(running){lastTs=0;carry=0;}};
+renderAll();setRunBtn();
+$('#dotsOn').checked=dotsOn;$('#dotsOn').addEventListener('change',e=>{dotsOn=e.target.checked;if(!dotsOn)dots=[];});
+requestAnimationFrame(animDots);
+})();
+</script>
+</body>
+</html>
