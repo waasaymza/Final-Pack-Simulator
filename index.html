@@ -195,13 +195,26 @@ details p{max-width:80ch}
 #b-lane0 .buf-bar:not(.full) i{background:#2E9E4F}
 #b-lane1 .buf-bar:not(.full) i{background:#E8822A}
 .wires circle{stroke:var(--panel);stroke-width:1}
+.offbtn{margin-top:6px;font-size:12px;font-weight:600;border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:3px 10px;cursor:pointer;color:var(--ink)}
+.offbtn[aria-pressed="true"]{background:var(--coral);border-color:var(--coral);color:#fff}
+.mc.st-off{border-left-color:var(--gray);background:var(--gray-soft)} .mc.st-off .mc-state{color:var(--coral)}
+.stack .x{background:repeating-linear-gradient(45deg,var(--gray) 0 3px,transparent 3px 7px)}
 .mc.robot{outline:1.5px dashed var(--ink2);outline-offset:7px}
+</style>
+<style>
+.feedline{font-size:12px;font-weight:600;color:var(--ink2)}
+.feedline.over{color:var(--coral)}
+.mc.st-roll{border-left-color:var(--gray);background:var(--gray-soft)} .mc.st-roll .mc-state{color:var(--ink)}
+.floor{grid-template-areas:". . m2 ." ". m1 . ." ". l1 . ." ". . l2 ." "t1 b1 b2 t2" "tb bpa bpa cb" "tp . . er" "pb pal . ." !important}
+.wires path.refeed{stroke-dasharray:2 4;opacity:.8}
+.tote .sub2{font-size:12px;color:var(--ink2)}
+.floor-wrap{padding:8px 8px 12px}
 </style>
 </head>
 <body>
 <header class="top">
   <h1>Final Pack line simulator</h1>
-  <p>Mamata baggers through the palletizer. Set your speeds, run the shift, and see which machine holds the line back and where buffer pays off.</p>
+  <p>Mamata baggers through the robot palletizer. Set your speeds, run the shift, and see which machine holds the line back and where buffer pays off.</p>
 </header>
 
 <div class="toolbar">
@@ -211,7 +224,7 @@ details p{max-width:80ch}
   <label for="speed">Speed</label>
   <select id="speed">
     <option value="1">1x</option><option value="10">10x</option><option value="30">30x</option><option value="50" selected>50x</option>
-    <option value="60">60x</option><option value="120">120x</option><option value="300">300x</option>
+    <option value="120">120x</option><option value="300">300x</option>
   </select>
   <label class="check" style="margin:0"><input type="checkbox" id="dotsOn"> Show moving pouches</label>
   <div class="clock"><span class="clock-text" id="clockText">0:00 of 8:00</span><div class="clock-bar"><i id="clockBar"></i></div></div>
@@ -221,35 +234,34 @@ details p{max-width:80ch}
   <section id="flow" class="panel" aria-label="Line view">
     <div class="floor-wrap"><div class="floor" id="floor">
       <svg class="wires" id="wires" aria-hidden="true"><g id="wireg"></g><g id="dotg"></g></svg>
-      <div class="mc" id="c-m2" style="grid-area:m2"><div class="mc-name">Mamata 2</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">pouches made</div></div>
-      <div class="mc" id="c-m1" style="grid-area:m1"><div class="mc-name">Mamata 1</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">pouches made</div></div>
+      <div class="mc" id="c-m2" style="grid-area:m2"><div class="mc-name">Mamata 2</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">pouches made</div><button class="offbtn" data-bag="1">Shut down</button></div>
+      <div class="mc" id="c-m1" style="grid-area:m1"><div class="mc-name">Mamata 1</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">pouches made</div><button class="offbtn" data-bag="0">Shut down</button></div>
       <div class="mc" id="c-l1" style="grid-area:l1"><div class="mc-name">Loma 1</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">pouches passed</div></div>
       <div class="mc" id="c-l2" style="grid-area:l2"><div class="mc-name">Loma 2</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">pouches passed</div></div>
-      <div class="tote" id="t-0" style="grid-area:t1"><div class="mc-name">Overflow tote 1</div><div class="mc-num">0</div><div class="mc-sub">pouches diverted</div></div>
+      <div class="tote" id="t-0" style="grid-area:t1"><div class="mc-name">Tote 1</div><div class="mc-num">0</div><div class="mc-sub">pouches in tote now</div><div class="sub2">0 diverted this shift</div></div>
       <div class="buf" id="b-lane0" style="grid-area:b1"><div class="buf-name">Mamata 1 belt to BPA</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
       <div class="buf" id="b-lane1" style="grid-area:b2"><div class="buf-name">Mamata 2 belt to BPA</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
-      <div class="tote" id="t-1" style="grid-area:t2"><div class="mc-name">Overflow tote 2</div><div class="mc-num">0</div><div class="mc-sub">pouches diverted</div></div>
+      <div class="tote" id="t-1" style="grid-area:t2"><div class="mc-name">Tote 2</div><div class="mc-num">0</div><div class="mc-sub">pouches in tote now</div><div class="sub2">0 diverted this shift</div></div>
       <div class="buf" id="b-tapeBuf" style="grid-area:tb"><div class="buf-name">Cases before taper</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
       <div class="bpa" id="c-bpa" style="grid-area:bpa">
         <div class="mc-name">BPA Gantry 300</div>
         <div class="mc-state" id="bpaState">Ready</div>
+        <div class="feedline" id="bpaFeed"></div>
         <div class="cases" id="caseGrid"></div>
         <div class="bpa-detail" id="bpaDetail"></div>
         <div class="mc-num" id="bpaNum">0</div><div class="mc-sub">cases packed</div>
       </div>
       <div class="buf" id="b-caseBuf" style="grid-area:cb"><div class="buf-name">Empty cases waiting at BPA</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
-      <div class="mc" id="c-tape" style="grid-area:tp"><div class="mc-name">Tape machine</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">cases taped</div></div>
+      <div class="mc" id="c-tape" style="grid-area:tp"><div class="mc-name">Taper + checkweigher + printers</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">cases sealed and coded</div></div>
       <div class="mc" id="c-er" style="grid-area:er"><div class="mc-name">Lantech case erector</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">cases made</div></div>
-      <div class="buf" id="b-cwBuf" style="grid-area:cwb"><div class="buf-name">Cases before checkweigher</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
-      <div class="mc" id="c-cw" style="grid-area:cw"><div class="mc-name">Checkweigher + printers</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub">cases coded</div></div>
-      <div class="buf" id="b-palBuf" style="grid-area:pb"><div class="buf-name">Cases before palletizer</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
-      <div class="mc robot" id="c-pal" style="grid-area:pal"><div class="mc-name">Robot palletizer</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub" id="palSub">pallets</div><div class="pal-bar"><i id="palBar"></i></div></div>
+      <div class="buf" id="b-palBuf" style="grid-area:pb"><div class="buf-name">Cases before ARB</div><div class="buf-bar"><i></i></div><div class="buf-num">0</div></div>
+      <div class="mc robot" id="c-pal" style="grid-area:pal"><div class="mc-name">ARB + robot palletizer</div><div class="mc-state">Ready</div><div class="mc-num">0</div><div class="mc-sub" id="palSub">pallets</div><div class="pal-bar"><i id="palBar"></i></div></div>
     </div></div>
     <div class="legend">
       <span style="--c:var(--teal)">Running</span>
       <span style="--c:var(--gold)">Waiting for product (starved)</span>
-      <span style="--c:var(--coral)">Backed up or restarting (blocked)</span>
-      <span style="--c:var(--gray)">Stopped or changing pallet</span>
+      <span style="--c:var(--coral)">Backed up (blocked)</span>
+      <span style="--c:var(--gray)">Stopped, roll change, or pallet change</span>
       <span style="--c:#2E9E4F">Mamata 1 pouches</span>
       <span style="--c:#E8822A">Mamata 2 pouches</span>
       <span style="--c:#D64545">Empty cases from Lantech</span>
@@ -281,7 +293,7 @@ details p{max-width:80ch}
       <div class="panel">
         <h2>Where the line is limited</h2>
         <div id="capBars"></div>
-        <p class="note">Each step's speed in cases per minute, after its average stops. The red one is your constraint today and the gold one is where the limit moves next.</p>
+        <p class="note">Each step's speed in cases per minute, after its average stops and roll changes. The red one is your constraint today and the gold one is where the limit moves next.</p>
       </div>
       <div class="panel">
         <h2>How each machine spent its time</h2>
@@ -292,7 +304,7 @@ details p{max-width:80ch}
     <div class="panel">
       <h2>Buffers</h2>
       <div class="tablewrap"><table class="buf-t" id="bufTable"></table></div>
-      <p class="note">Buffer earns its keep right before and right after the constraint. Everywhere else, extra buffer mostly hides stops rather than adding output, so fix the stops first.</p>
+      <p class="note">Only places where cases can actually queue are listed. The belts from the Lomas to the BPA aren't a buffer: whatever they gather is dumped to the tote when the diverter fires.</p>
     </div>
     <div class="panel">
       <h2>What this run is telling you</h2>
@@ -301,9 +313,10 @@ details p{max-width:80ch}
     <div class="panel">
       <details>
         <summary>How the line is modeled</summary>
-        <p>Each Mamata drops pouches onto a short belt into its Loma. Rejected pouches leave the line at the Loma. Good pouches build up on that lane's belt to the BPA. If a belt fills and its overflow tote is turned on, extra pouches go to the tote and the Mamata keeps running. With the tote turned off, the Loma backs up, then the Mamata stops and needs the restart time before it runs again.</p>
-        <p>The gantry loads a cartridge with 7 or 9 slots. Each pick takes that many pouches from one lane's belt and stacks one pouch in every slot. It alternates lanes and keeps going on one lane if the other is down. After 7 or 8 picks (the customer's pouches per case) the stacks are pushed into the cases together. While the gantry loads the next cartridge, the case side pushes the full cases out to the taper and pulls a new set of empties in, so the gantry only waits if the case swap takes longer than loading the cartridge.</p>
-        <p>The taper, printer + checkweigher, and palletizer each work one case at a time at their set speed. When a pallet is full, the palletizer pauses while the pallet is pushed out and the robot places a new pallet and slip sheet.</p>
+        <p>Each Mamata drops pouches onto a short belt into its Loma. Every film and zipper roll runs a set number of pouches, then that Mamata stops for the change. Mamata 2's rolls start half used so the two baggers don't change at the same time. Rejected pouches leave the line at the Loma.</p>
+        <p>Good pouches go to that lane's pick station on the BPA, which holds one pick group. If the pick group is already waiting, pouches gather on the belt behind it. Once the belt has gathered its limit, the diverter fires and everything gathered goes to the tote, not just the extra pouch. If the combined pouch feed from the running Mamatas is over the BPA's limit for the current head, the extra pouches over the limit are missed by the smart tracks and go to the tote. At the stall rate the smart tracks can't keep up at all and every pouch goes to the tote. Tote pouches can be hand-fed back through the Loma while that lane's Mamata is stopped.</p>
+        <p>The gantry stacks pouches into a 7- or 9-slot cartridge, one pouch per slot each pick, alternating lanes and running on one lane if the other is down. After 7 or 8 picks the stacks are pushed into the cases together. While the gantry loads the next cartridge, the case side pushes the full cases out and pulls in empties from the Lantech.</p>
+        <p>Cases can queue before the taper. The taper, case checkweigher, and printers then run as one station at one speed with no buffer between them, and a stop on any of the three stops the station. The ARB feeds cases into the robot at the slower of the ARB and robot speeds. When a pallet is full, the robot pauses for the pallet push-out and the new pallet and slip sheet, either at the same time or one after the other.</p>
       </details>
     </div>
   </section>
@@ -312,54 +325,65 @@ details p{max-width:80ch}
 <script>
 (function(){
 const $=s=>document.querySelector(s);
-const DT=0.1;
-const STORE='wf-finalpack-sim-v2';
+const DT=0.1, STORE='wf-finalpack-sim-v3';
 
 const MACH=[
   {k:'m1',name:'Mamata 1',stage:'bag'},{k:'m2',name:'Mamata 2',stage:'bag'},
   {k:'l1',name:'Loma 1',stage:'loma'},{k:'l2',name:'Loma 2',stage:'loma'},
   {k:'er',name:'Lantech case erector',stage:'er'},{k:'bpa',name:'BPA Gantry 300',stage:'bpa'},
-  {k:'tape',name:'Tape machine',stage:'tape'},{k:'cw',name:'Checkweigher + printers',stage:'cw'},
-  {k:'pal',name:'Robot palletizer',stage:'pal'}];
+  {k:'tape',name:'Taper + checkweigher + printers',stage:'tape'},{k:'pal',name:'ARB + robot palletizer',stage:'pal'}];
 const NAME=Object.fromEntries(MACH.map(m=>[m.k,m.name]));
+const STOP_ROWS=[{k:'m1',name:'Mamata 1'},{k:'m2',name:'Mamata 2'},{k:'l1',name:'Loma 1'},{k:'l2',name:'Loma 2'},
+  {k:'er',name:'Lantech case erector'},{k:'bpa',name:'BPA Gantry 300'},{k:'tape',name:'Tape machine'},{k:'cw',name:'Case checkweigher'},
+  {k:'prn',name:'Printers'},{k:'arb',name:'ARB'},{k:'pal',name:'Robot palletizer'}];
+const STOP_DEF={m1:[15,60],m2:[15,60],l1:[60,30],l2:[60,30],er:[20,30],bpa:[30,45],tape:[30,20],cw:[120,20],prn:[60,30],arb:[60,30],pal:[60,60]};
 
 const CONTROLS=[
   {g:'Mamata baggers',id:'m1Rate',label:'Mamata 1 speed',unit:'bags/min',min:50,max:110,step:1,val:80},
   {g:'Mamata baggers',id:'m2Rate',label:'Mamata 2 speed',unit:'bags/min',min:50,max:110,step:1,val:80},
-  {g:'Mamata baggers',id:'restart',label:'Restart time after its belt backs up',unit:'sec',min:0,max:30,step:1,val:5},
+  {g:'Mamata roll changes',id:'filmRoll',label:'Pouches per film roll',unit:'pouches',min:500,max:20000,step:100,val:4000},
+  {g:'Mamata roll changes',id:'filmTime',label:'Film roll change',unit:'min',min:0.5,max:30,step:0.5,val:5},
+  {g:'Mamata roll changes',id:'zipRoll',label:'Pouches per zipper roll',unit:'pouches',min:500,max:30000,step:100,val:6000},
+  {g:'Mamata roll changes',id:'zipTime',label:'Zipper roll change',unit:'min',min:0.5,max:30,step:0.5,val:4},
   {g:'Loma X-ray + checkweigher',id:'l1Rate',label:'Loma 1 top speed',unit:'bags/min',min:80,max:160,step:1,val:120},
   {g:'Loma X-ray + checkweigher',id:'l2Rate',label:'Loma 2 top speed',unit:'bags/min',min:80,max:160,step:1,val:120},
   {g:'Loma X-ray + checkweigher',id:'reject',label:'Pouches rejected',unit:'%',min:0,max:10,step:0.5,val:1},
-  {g:'Belts into the BPA',id:'laneCap',label:'Pouches each belt holds before backing up',unit:'pouches',min:9,max:120,step:1,val:30},
+  {g:'Belts into the BPA',id:'accCap',label:'Pouches a belt gathers before its diverter fires',unit:'pouches',min:0,max:40,step:1,val:10},
+  {g:'Belts into the BPA',id:'refeedRate',label:'Hand-feed rate from a tote',unit:'pouches/min',min:5,max:60,step:1,val:20},
+  {g:'BPA Gantry 300',id:'feed7',label:'Max pouch feed into BPA, 7 head',unit:'pouches/min',min:80,max:200,step:1,val:125},
+  {g:'BPA Gantry 300',id:'feed9',label:'Max pouch feed into BPA, 9 head',unit:'pouches/min',min:80,max:250,step:1,val:160},
+  {g:'BPA Gantry 300',id:'feedStall',label:'Feed rate where smart tracks stop processing',unit:'pouches/min',min:130,max:300,step:1,val:200},
   {g:'BPA Gantry 300',id:'pickTime',label:'One gantry cycle (pick, drop, back)',unit:'sec',min:1.5,max:6,step:0.1,val:2.9},
-  {g:'BPA Gantry 300',id:'indexTime',label:'Case swap: full cases out, empties in (runs while cartridge loads)',unit:'sec',min:3,max:40,step:1,val:10},
   {g:'BPA Gantry 300',id:'pushTime',label:'Push stacked pouches from cartridge into cases',unit:'sec',min:1,max:15,step:0.5,val:3},
+  {g:'BPA Gantry 300',id:'indexTime',label:'Case swap: full cases out, empties in (runs while cartridge loads)',unit:'sec',min:3,max:40,step:1,val:10},
   {g:'Lantech case erector',id:'erRate',label:'Case erector speed',unit:'cases/min',min:17,max:25,step:1,val:21},
   {g:'Lantech case erector',id:'caseCap',label:'Empty cases that can wait at the BPA',unit:'cases',min:9,max:60,step:1,val:18},
-  {g:'Tape machine',id:'tapeRate',label:'Taper speed',unit:'cases/min',min:15,max:25,step:1,val:20},
-  {g:'Tape machine',id:'tapeCap',label:'Cases that can wait before the taper',unit:'cases',min:9,max:60,step:1,val:18},
-  {g:'Checkweigher + printers',id:'cwRate',label:'Checkweigher + printers speed',unit:'cases/min',min:20,max:60,step:1,val:40},
-  {g:'Checkweigher + printers',id:'cwCap',label:'Cases that can wait before the checkweigher',unit:'cases',min:1,max:40,step:1,val:8},
-  {g:'Palletizer',id:'palRate',label:'Palletizer speed',unit:'cases/min',min:8,max:30,step:1,val:20},
-  {g:'Palletizer',id:'palCap',label:'Cases that can wait before the palletizer',unit:'cases',min:1,max:60,step:1,val:12},
-  {g:'Palletizer',id:'cpp',label:'Cases per pallet',unit:'cases',min:40,max:200,step:1,val:140},
-  {g:'Palletizer',id:'palPush',label:'Push full pallet out',unit:'sec',min:0,max:120,step:1,val:15},
-  {g:'Palletizer',id:'palNew',label:'Robot places new pallet + slip sheet',unit:'sec',min:0,max:180,step:1,val:30},
+  {g:'Taper + checkweigher + printers',id:'tapeRate',label:'Station speed',unit:'cases/min',min:15,max:25,step:1,val:20},
+  {g:'Taper + checkweigher + printers',id:'tapeCap',label:'Cases that can wait before the taper',unit:'cases',min:9,max:60,step:1,val:18},
+  {g:'ARB + robot palletizer',id:'arbCap',label:'Cases that can wait before the ARB',unit:'cases',min:1,max:40,step:1,val:6},
+  {g:'ARB + robot palletizer',id:'arbRate',label:'ARB feed into robot',unit:'cases/min',min:8,max:30,step:1,val:18},
+  {g:'ARB + robot palletizer',id:'palRate',label:'Robot speed',unit:'cases/min',min:8,max:30,step:1,val:20},
+  {g:'ARB + robot palletizer',id:'cpp',label:'Cases per pallet',unit:'cases',min:40,max:200,step:1,val:140},
+  {g:'ARB + robot palletizer',id:'palPush',label:'Push full pallet out',unit:'sec',min:0,max:120,step:1,val:15},
+  {g:'ARB + robot palletizer',id:'palNew',label:'Robot places new pallet + slip sheet',unit:'sec',min:0,max:180,step:1,val:30},
   {g:'Shift',id:'shift',label:'Shift length',unit:'min',min:30,max:720,step:15,val:480},
 ];
-const STOP_DEF={m1:[15,60],m2:[15,60],l1:[60,30],l2:[60,30],er:[20,30],bpa:[30,45],tape:[30,20],cw:[45,30],pal:[60,60]};
+const CHECKS={
+  'Mamata roll changes':[['rollsOn','Include film and zipper roll changes']],
+  'Belts into the BPA':[['refeed','Hand-feed tote pouches back in while that Mamata is stopped']],
+  'ARB + robot palletizer':[['palConc','Pallet push-out and new pallet happen at the same time']]};
 
 function defaults(){
-  const P={vals:{},mins:{},maxs:{},pickN:9,perCase:8,stopsOn:true,overflow:[true,true],stops:JSON.parse(JSON.stringify(STOP_DEF))};
+  const P={vals:{},mins:{},maxs:{},pickN:9,perCase:8,stopsOn:true,rollsOn:true,refeed:true,palConc:true,off:[false,false],stops:JSON.parse(JSON.stringify(STOP_DEF))};
   CONTROLS.forEach(c=>{P.vals[c.id]=c.val;P.mins[c.id]=c.min;P.maxs[c.id]=c.max;});
   return P;
 }
 let P=defaults();
 try{const s=JSON.parse(localStorage.getItem(STORE)||'null');
-  if(s){['vals','mins','maxs','stops'].forEach(k=>Object.assign(P[k],s[k]||{}));
+  if(s){['vals','mins','maxs','stops'].forEach(k=>{if(s[k])Object.keys(P[k]).forEach(x=>{if(s[k][x]!==undefined)P[k][x]=s[k][x];});});
     if(s.pickN===7||s.pickN===9)P.pickN=s.pickN; if(s.perCase===7||s.perCase===8)P.perCase=s.perCase;
-    if(typeof s.stopsOn==='boolean')P.stopsOn=s.stopsOn;
-    if(Array.isArray(s.overflow)&&s.overflow.length===2)P.overflow=s.overflow.map(Boolean);}
+    ['stopsOn','rollsOn','refeed','palConc'].forEach(k=>{if(typeof s[k]==='boolean')P[k]=s[k];});
+    if(Array.isArray(s.off)&&s.off.length===2)P.off=s.off.map(Boolean);}
 }catch(e){}
 function save(){try{localStorage.setItem(STORE,JSON.stringify(P))}catch(e){}}
 
@@ -370,11 +394,9 @@ function buildControls(){
     if(c.g!==g){
       if(g)h+='</fieldset>';
       h+=`<fieldset><legend>${c.g}</legend>`; g=c.g;
-      if(g==='Belts into the BPA'){
-        h+=`<label class="check"><input type="checkbox" id="ovf0"> Mamata 1 belt overflows to a tote when full</label><label class="check"><input type="checkbox" id="ovf1"> Mamata 2 belt overflows to a tote when full</label>`;
-      }
+      (CHECKS[g]||[]).forEach(([opt,lbl])=>{h+=`<label class="check"><input type="checkbox" data-opt="${opt}"> ${lbl}</label>`;});
       if(g==='BPA Gantry 300'){
-        h+=`<div class="mode"><span>Cases filled at once</span><span class="seg" data-mode="pickN"><button data-v="7">7</button><button data-v="9">9</button></span></div>`;
+        h+=`<div class="mode"><span>Cases filled at once (head)</span><span class="seg" data-mode="pickN"><button data-v="7">7</button><button data-v="9">9</button></span></div>`;
         h+=`<div class="mode"><span>Pouches per case (customer)</span><span class="seg" data-mode="perCase"><button data-v="7">7</button><button data-v="8">8</button></span></div>`;
       }
     }
@@ -387,92 +409,87 @@ function buildControls(){
   $('#controls').innerHTML=h;
   CONTROLS.forEach(c=>{
     const r=$('#r-'+c.id),n=$('#n-'+c.id),mn=$('#mn-'+c.id),mx=$('#mx-'+c.id);
-    r.addEventListener('input',()=>{setVal(c.id,+r.value)});
-    n.addEventListener('change',()=>{setVal(c.id,+n.value)});
-    mn.addEventListener('change',()=>{let v=+mn.value; if(!isFinite(v))return; if(v>=P.maxs[c.id])v=P.maxs[c.id]-c.step; P.mins[c.id]=v; setVal(c.id,P.vals[c.id]);});
-    mx.addEventListener('change',()=>{let v=+mx.value; if(!isFinite(v))return; if(v<=P.mins[c.id])v=P.mins[c.id]+c.step; P.maxs[c.id]=v; setVal(c.id,P.vals[c.id]);});
+    r.addEventListener('input',()=>setVal(c.id,+r.value));
+    n.addEventListener('change',()=>setVal(c.id,+n.value));
+    mn.addEventListener('change',()=>{let v=+mn.value;if(!isFinite(v))return;if(v>=P.maxs[c.id])v=P.maxs[c.id]-c.step;P.mins[c.id]=v;setVal(c.id,P.vals[c.id]);});
+    mx.addEventListener('change',()=>{let v=+mx.value;if(!isFinite(v))return;if(v<=P.mins[c.id])v=P.mins[c.id]+c.step;P.maxs[c.id]=v;setVal(c.id,P.vals[c.id]);});
   });
-  document.querySelectorAll('.seg').forEach(seg=>{
-    seg.addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; P[seg.dataset.mode]=+b.dataset.v; syncControls(); changed();});
-  });
+  document.querySelectorAll('[data-opt]').forEach(cb=>cb.addEventListener('change',()=>{P[cb.dataset.opt]=cb.checked;changed();}));
+  document.querySelectorAll('.seg').forEach(seg=>seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P[seg.dataset.mode]=+b.dataset.v;syncControls();changed();}));
   let st='<tr><th>Machine</th><th>About every (min)</th><th>Lasts about (sec)</th></tr>';
-  MACH.forEach(m=>{st+=`<tr><td>${m.name}</td><td><input type="number" min="1" id="sb-${m.k}" aria-label="${m.name} minutes between stops"></td><td><input type="number" min="0" id="sd-${m.k}" aria-label="${m.name} seconds per stop"></td></tr>`;});
+  STOP_ROWS.forEach(m=>{st+=`<tr><td>${m.name}</td><td><input type="number" min="1" id="sb-${m.k}" aria-label="${m.name} minutes between stops"></td><td><input type="number" min="0" id="sd-${m.k}" aria-label="${m.name} seconds per stop"></td></tr>`;});
   $('#stopsTable').innerHTML=st;
-  MACH.forEach(m=>{
-    $('#sb-'+m.k).addEventListener('change',e=>{const v=Math.max(1,+e.target.value||1);P.stops[m.k][0]=v;changed();});
-    $('#sd-'+m.k).addEventListener('change',e=>{const v=Math.max(0,+e.target.value||0);P.stops[m.k][1]=v;changed();});
+  STOP_ROWS.forEach(m=>{
+    $('#sb-'+m.k).addEventListener('change',e=>{P.stops[m.k][0]=Math.max(1,+e.target.value||1);changed();});
+    $('#sd-'+m.k).addEventListener('change',e=>{P.stops[m.k][1]=Math.max(0,+e.target.value||0);changed();});
   });
   $('#stopsOn').addEventListener('change',e=>{P.stopsOn=e.target.checked;changed();});
-  [0,1].forEach(i=>$('#ovf'+i).addEventListener('change',e=>{P.overflow[i]=e.target.checked;changed();}));
 }
 function setVal(id,v){
   const c=CONTROLS.find(x=>x.id===id);
   if(!isFinite(v))v=P.vals[id];
-  v=Math.min(P.maxs[id],Math.max(P.mins[id],v));
-  v=Math.round(v/c.step)*c.step; v=+v.toFixed(2);
+  v=Math.min(P.maxs[id],Math.max(P.mins[id],v)); v=+(Math.round(v/c.step)*c.step).toFixed(2);
   P.vals[id]=v; syncControls(); changed();
 }
 function syncControls(){
-  CONTROLS.forEach(c=>{
-    const r=$('#r-'+c.id); r.min=P.mins[c.id]; r.max=P.maxs[c.id]; r.value=P.vals[c.id];
-    $('#n-'+c.id).value=P.vals[c.id]; $('#mn-'+c.id).value=P.mins[c.id]; $('#mx-'+c.id).value=P.maxs[c.id];
-  });
-  document.querySelectorAll('.seg').forEach(seg=>{
-    seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===P[seg.dataset.mode])));
-  });
-  MACH.forEach(m=>{$('#sb-'+m.k).value=P.stops[m.k][0];$('#sd-'+m.k).value=P.stops[m.k][1];});
-  $('#stopsOn').checked=P.stopsOn;
-  [0,1].forEach(i=>{$('#ovf'+i).checked=P.overflow[i];});
-  $('#stopsTable').style.opacity=P.stopsOn?1:.45;
+  CONTROLS.forEach(c=>{const r=$('#r-'+c.id);r.min=P.mins[c.id];r.max=P.maxs[c.id];r.value=P.vals[c.id];
+    $('#n-'+c.id).value=P.vals[c.id];$('#mn-'+c.id).value=P.mins[c.id];$('#mx-'+c.id).value=P.maxs[c.id];});
+  document.querySelectorAll('.seg').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===P[seg.dataset.mode]))));
+  document.querySelectorAll('[data-opt]').forEach(cb=>{cb.checked=!!P[cb.dataset.opt];});
+  STOP_ROWS.forEach(m=>{$('#sb-'+m.k).value=P.stops[m.k][0];$('#sd-'+m.k).value=P.stops[m.k][1];});
+  $('#stopsOn').checked=P.stopsOn; $('#stopsTable').style.opacity=P.stopsOn?1:.45;
 }
-function changed(){save(); S=newSim(); renderAll();}
+function changed(){save();S=newSim();syncDots();setRunBtn();renderAll();}
 
 /* ---------- Simulation ---------- */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function expo(rng,mean){return mean<=0?0:-mean*Math.log(1-rng())}
-const BUFS=['lane0','lane1','caseBuf','tapeBuf','cwBuf','palBuf'];
-
+const BUFS=['caseBuf','tapeBuf','palBuf'];
+function bufCap(b){const v=P.vals;return b==='caseBuf'?v.caseCap:b==='tapeBuf'?v.tapeCap:v.arbCap;}
+const BELT=6;
 function newSim(){
-  const rng=mulberry32(20261009);
-  const S={t:0,end:P.vals.shift*60,rng,belt:[0,0],beltCap:6,lane:[0,0],caseBuf:0,tapeBuf:0,cwBuf:0,palBuf:0,
-    prog:{},st:{},stat:{},stop:{},mam:[{blocked:false,restartUntil:0},{blocked:false,restartUntil:0}],
-    bpa:{phase:'ready',timer:0,picks:0,next:0,last:null,wait:null},bcase:{phase:'needCases',timer:0},pal:{on:0,changeUntil:0},
-    toteAt:[-99,-99],c:{bagged:[0,0],passed:[0,0],tote:[0,0],picks:[0,0],loaded:0,rejected:0,erected:0,packed:0,taped:0,coded:0,palCases:0,pallets:0},
+  const rng=mulberry32(20261009),v=P.vals;
+  const S={t:0,end:v.shift*60,rng,belt:[0,0],lane:[0,0],acc:[0,0],toteNow:[0,0],toteAt:[-99,-99],refProg:[0,0],
+    caseBuf:0,tapeBuf:0,palBuf:0,prog:{},st:{},why:{},stat:{},stop:{},missP:0,feedNow:0,rollTime:[0,0],
+    mam:[{changeUntil:0,type:null,film:0,zip:Math.round(v.zipRoll/3)},{changeUntil:0,type:null,film:Math.round(v.filmRoll/2),zip:Math.round(v.zipRoll*5/6)}],
+    bpa:{phase:'ready',timer:0,picks:0,next:0,last:0,wait:null},bcase:{phase:'needCases',timer:0},pal:{on:0,changeUntil:0},
+    c:{bagged:[0,0],passed:[0,0],rejected:0,tote:[0,0],missed:[0,0],diverted:[0,0],refed:[0,0],picks:[0,0],erected:0,loaded:0,packed:0,taped:0,palCases:0,pallets:0},
     bpaWaitCases:0,bpaWaitPouches:0,buf:{}};
-  MACH.forEach(m=>{
-    S.prog[m.k]=0;S.st[m.k]='idle';S.stat[m.k]={run:0,starved:0,blocked:0,down:0};
-    const[b,d]=P.stops[m.k];
-    S.stop[m.k]={until:-1,between:b*60,dur:d,nextAt:P.stopsOn?expo(rng,b*60):Infinity,count:0};
-  });
+  MACH.forEach(m=>{S.prog[m.k]=0;S.st[m.k]='idle';S.stat[m.k]={run:0,starved:0,blocked:0,down:0,off:0};});
+  STOP_ROWS.forEach(r=>{const[b,d]=P.stops[r.k];S.stop[r.k]={until:-1,between:b*60,dur:d,nextAt:P.stopsOn?expo(rng,b*60):Infinity};});
   BUFS.forEach(b=>S.buf[b]={sum:0,max:0,full:0});
   return S;
 }
-function bufVal(S,b){return b==='lane0'?S.lane[0]:b==='lane1'?S.lane[1]:S[b];}
-function bufCap(b){const v=P.vals;return b==='lane0'||b==='lane1'?v.laneCap:b==='caseBuf'?v.caseCap:b==='tapeBuf'?v.tapeCap:b==='cwBuf'?v.cwCap:v.palCap;}
-
 function step(S,dt){
   const v=P.vals,N=P.pickN,PC=P.perCase,t=S.t;
-  for(const m of MACH){const s=S.stop[m.k]; if(t>=s.nextAt){s.until=t+expo(S.rng,s.dur);s.nextAt=s.until+expo(S.rng,s.between);s.count++;}}
+  for(const r of STOP_ROWS){const s=S.stop[r.k];if(t>=s.nextAt){s.until=t+expo(S.rng,s.dur);s.nextAt=s.until+expo(S.rng,s.between);}}
   const dn=k=>t<S.stop[k].until;
-  const rec=(k,s)=>{S.st[k]=s;const map={run:'run',starved:'starved',blocked:'blocked',restart:'blocked',down:'down',change:'down'};S.stat[k][map[s]]+=dt;};
-  const flow=(k,rate,inOk,outOk,move)=>{
-    if(dn(k))return'down'; if(!inOk)return'starved'; if(!outOk)return'blocked';
-    S.prog[k]+=rate/60*dt; if(S.prog[k]>=1){S.prog[k]-=1;move();} return'run';};
+  const MAP={run:'run',starved:'starved',blocked:'blocked',down:'down',change:'down',roll:'down',off:'off'};
+  const rec=(k,s,why)=>{S.st[k]=s;S.why[k]=why||null;S.stat[k][MAP[s]]+=dt;};
+  let s,why;
 
-  // Palletizer
-  let s;
-  if(dn('pal'))s='down';
+  // ARB + robot palletizer
+  why=null;
+  if(dn('arb')){s='down';why='ARB stopped';}
+  else if(dn('pal')){s='down';why='Robot stopped';}
   else if(t<S.pal.changeUntil)s='change';
   else if(S.palBuf<1)s='starved';
-  else{s='run';S.prog.pal+=v.palRate/60*dt;
+  else{s='run';S.prog.pal+=Math.min(v.arbRate,v.palRate)/60*dt;
     if(S.prog.pal>=1){S.prog.pal-=1;S.palBuf--;S.c.palCases++;S.pal.on++;
-      if(S.pal.on>=v.cpp){S.pal.on=0;S.c.pallets++;S.pal.changeUntil=t+v.palPush+v.palNew;}}}
-  rec('pal',s);
-  rec('cw',flow('cw',v.cwRate,S.cwBuf>=1,S.palBuf<v.palCap,()=>{S.cwBuf--;S.palBuf++;S.c.coded++;}));
-  rec('tape',flow('tape',v.tapeRate,S.tapeBuf>=1,S.cwBuf<v.cwCap,()=>{S.tapeBuf--;S.cwBuf++;S.c.taped++;}));
+      if(S.pal.on>=v.cpp){S.pal.on=0;S.c.pallets++;S.pal.changeUntil=t+(P.palConc?Math.max(v.palPush,v.palNew):v.palPush+v.palNew);}}}
+  rec('pal',s,why);
 
-  // BPA
-  // Gantry keeps loading the cartridge while the case side swaps cases in parallel
+  // Taper + checkweigher + printers: one station, any of the three down stops it
+  why=null;
+  if(dn('tape')){s='down';why='Tape machine stopped';}
+  else if(dn('cw')){s='down';why='Checkweigher stopped';}
+  else if(dn('prn')){s='down';why='Printers stopped';}
+  else if(S.tapeBuf<1)s='starved';
+  else if(S.palBuf>=v.arbCap)s='blocked';
+  else{s='run';S.prog.tape+=v.tapeRate/60*dt;if(S.prog.tape>=1){S.prog.tape-=1;S.tapeBuf--;S.palBuf++;S.c.taped++;}}
+  rec('tape',s,why);
+
+  // BPA: gantry loads the cartridge while the case side swaps cases in parallel
   const b=S.bpa,cs=S.bcase; s=null; b.wait=null;
   if(dn('bpa'))s='down';
   else{
@@ -483,182 +500,213 @@ function step(S,dt){
     else if(b.phase==='pick'){b.timer-=dt;s='run';if(b.timer<=0){b.picks++;b.phase=b.picks>=PC?'full':'ready';}}
     if(!s&&b.phase==='full'){
       if(cs.phase==='ready'){b.phase='push';b.timer=v.pushTime;s='run';}
-      else if(cs.phase==='filled'){s='blocked';}
+      else if(cs.phase==='filled')s='blocked';
       else if(cs.phase==='needCases'){s='starved';b.wait='cases';S.bpaWaitCases+=dt;}
       else{s='run';b.wait='swap';}
     }
     if(!s&&b.phase==='ready'){
-      let ln=-1; if(S.lane[b.next]>=N)ln=b.next; else if(S.lane[1-b.next]>=N)ln=1-b.next;
+      let ln=-1;if(S.lane[b.next]>=N)ln=b.next;else if(S.lane[1-b.next]>=N)ln=1-b.next;
       if(ln<0){s='starved';b.wait='pouches';S.bpaWaitPouches+=dt;}
-      else{S.lane[ln]-=N;S.c.picks[ln]++;b.last=ln;b.next=1-ln;b.phase='pick';b.timer=v.pickTime;s='run';}
+      else{S.lane[ln]-=N;S.c.picks[ln]++;
+        const mv=Math.min(S.acc[ln],N-S.lane[ln]);S.lane[ln]+=mv;S.acc[ln]-=mv;
+        b.last=ln;b.next=1-ln;b.phase='pick';b.timer=v.pickTime;s='run';}
     }
   }
   rec('bpa',s);
 
-  rec('er',flow('er',v.erRate,true,S.caseBuf<v.caseCap,()=>{S.caseBuf++;S.c.erected++;}));
-  [0,1].forEach(i=>{
-    const k='l'+(i+1);
-    const ovf=P.overflow[i];
-    rec(k,flow(k,v[k+'Rate'],S.belt[i]>=1,ovf||S.lane[i]<v.laneCap,()=>{S.belt[i]--;
-      if(S.rng()<v.reject/100)S.c.rejected++;
-      else if(S.lane[i]<v.laneCap){S.lane[i]++;S.c.passed[i]++;}
-      else{S.c.tote[i]++;S.toteAt[i]=S.t;}}));
-  });
-  [0,1].forEach(i=>{
-    const k='m'+(i+1),M=S.mam[i];let st;
-    if(dn(k))st='down';
-    else if(S.belt[i]>=S.beltCap){st='blocked';M.blocked=true;}
-    else if(M.blocked){M.blocked=false;M.restartUntil=t+v.restart;st=v.restart>0?'restart':'run';}
-    else if(t<M.restartUntil)st='restart';
-    else st='run';
-    if(st==='run'){S.prog[k]+=v[k+'Rate']/60*dt;if(S.prog[k]>=1){S.prog[k]-=1;S.belt[i]++;S.c.bagged[i]++;}}
-    rec(k,st);
-  });
-  BUFS.forEach(bn=>{const x=bufVal(S,bn),B=S.buf[bn];B.sum+=x*dt;if(x>B.max)B.max=x;if(x>=bufCap(bn))B.full+=dt;});
+  // Lantech
+  if(dn('er'))s='down';else if(S.caseBuf>=v.caseCap)s='blocked';
+  else{s='run';S.prog.er+=v.erRate/60*dt;if(S.prog.er>=1){S.prog.er-=1;S.caseBuf++;S.c.erected++;}}
+  rec('er',s);
+
+  // Pouch feed into the BPA and the chance the smart tracks miss a pouch
+  const y=1-v.reject/100; let feed=0;
+  [0,1].forEach(i=>{if(S.st['m'+(i+1)]==='run')feed+=v['m'+(i+1)+'Rate']*y;});
+  const lim=N===7?v.feed7:v.feed9; S.feedNow=feed; S.feedLim=lim;
+  S.missP=feed<=lim?0:feed>=v.feedStall?1:(feed-lim)/feed;
+  const toTote=(i,n)=>{S.toteNow[i]+=n;S.c.tote[i]+=n;S.toteAt[i]=t;};
+
+  // Lomas: never blocked, the diverter decides where each pouch goes
+  [0,1].forEach(i=>{const k='l'+(i+1);
+    if(dn(k))s='down';else if(S.belt[i]<1)s='starved';
+    else{s='run';S.prog[k]+=v[k+'Rate']/60*dt;
+      if(S.prog[k]>=1){S.prog[k]-=1;S.belt[i]--;
+        if(S.rng()<v.reject/100)S.c.rejected++;
+        else{S.c.passed[i]++;
+          if(S.missP>0&&S.rng()<S.missP){S.c.missed[i]++;toTote(i,1);}
+          else if(S.lane[i]<N)S.lane[i]++;
+          else if(S.acc[i]<v.accCap)S.acc[i]++;
+          else{const n=S.acc[i]+1;S.c.diverted[i]+=n;toTote(i,n);S.acc[i]=0;}}}}
+    rec(k,s);});
+
+  // Mamatas, roll changes, and hand-feeding from the tote
+  [0,1].forEach(i=>{const k='m'+(i+1),M=S.mam[i];let st,w=null;
+    if(P.off[i])st='off';
+    else if(dn(k))st='down';
+    else if(t<M.changeUntil){st='roll';w=M.type==='film'?'Changing film roll':M.type==='zip'?'Changing zipper roll':'Changing film and zipper rolls';S.rollTime[i]+=dt;}
+    else if(S.belt[i]>=BELT)st='blocked';
+    else{st='run';S.prog[k]+=v[k+'Rate']/60*dt;
+      if(S.prog[k]>=1){S.prog[k]-=1;S.belt[i]++;S.c.bagged[i]++;
+        if(P.rollsOn){M.film++;M.zip++;let add=0,ty=[];
+          if(M.film>=v.filmRoll){M.film=0;add+=v.filmTime*60;ty.push('film');}
+          if(M.zip>=v.zipRoll){M.zip=0;add+=v.zipTime*60;ty.push('zip');}
+          if(add>0){M.changeUntil=t+add;M.type=ty.length>1?'both':ty[0];}}}}
+    if(P.refeed&&st!=='run'&&S.toteNow[i]>0&&S.belt[i]<BELT){S.refProg[i]+=v.refeedRate/60*dt;
+      if(S.refProg[i]>=1){S.refProg[i]-=1;S.toteNow[i]--;S.belt[i]++;S.c.refed[i]++;if(st!=='off')w=(w?w+', ':'')+'hand-feeding tote';}}
+    rec(k,st,w);});
+
+  BUFS.forEach(bn=>{const x=S[bn],B=S.buf[bn];B.sum+=x*dt;if(x>B.max)B.max=x;if(x>=bufCap(bn))B.full+=dt;});
   S.t+=dt;
 }
 
 /* ---------- Analysis ---------- */
 function avail(k){if(!P.stopsOn)return 1;const[b,d]=P.stops[k];return b*60/(b*60+d);}
+function rollAvail(rate){if(!P.rollsOn)return 1;const v=P.vals;return 1/(1+rate*(v.filmTime/v.filmRoll+v.zipTime/v.zipRoll));}
+function palChange(){const v=P.vals;return P.palConc?Math.max(v.palPush,v.palNew):v.palPush+v.palNew;}
 function capacity(){
-  const v=P.vals,N=P.pickN,PC=P.perCase,y=1-v.reject/100;
+  const v=P.vals,N=P.pickN,PC=P.perCase,y=1-v.reject/100,lim=N===7?v.feed7:v.feed9;
+  const bag=i=>{if(P.off[i])return 0;const r=v['m'+(i+1)+'Rate'];return r*avail('m'+(i+1))*rollAvail(r);};
   const st=[
-    {key:'bag',name:'Mamata baggers',cpm:(v.m1Rate*avail('m1')+v.m2Rate*avail('m2'))*y/PC},
+    {key:'bag',name:'Mamata baggers',cpm:(bag(0)+bag(1))*y/PC},
     {key:'loma',name:'Loma X-ray + checkweighers',cpm:(v.l1Rate*avail('l1')+v.l2Rate*avail('l2'))*y/PC},
+    {key:'feed',name:'BPA pouch feed limit',cpm:lim/PC},
     {key:'bpa',name:'BPA Gantry 300',cpm:60*N/(Math.max(PC*v.pickTime,v.indexTime)+v.pushTime)*avail('bpa')},
     {key:'er',name:'Lantech case erector',cpm:v.erRate*avail('er')},
-    {key:'tape',name:'Tape machine',cpm:v.tapeRate*avail('tape')},
-    {key:'cw',name:'Checkweigher + printers',cpm:v.cwRate*avail('cw')},
-    {key:'pal',name:'Robot palletizer',cpm:v.cpp/(v.cpp/v.palRate+(v.palPush+v.palNew)/60)*avail('pal')},
-  ];
+    {key:'tape',name:'Taper + checkweigher + printers',cpm:v.tapeRate*avail('tape')*avail('cw')*avail('prn')},
+    {key:'pal',name:'ARB + robot palletizer',cpm:v.cpp/(v.cpp/Math.min(v.arbRate,v.palRate)+palChange()/60)*avail('arb')*avail('pal')}];
   return{stages:st,sorted:[...st].sort((a,b)=>a.cpm-b.cpm)};
 }
 function simBottleneck(S){
-  const t=Math.max(S.t,1); let best=null;
-  const dumping=S.c.tote[0]+S.c.tote[1]>0;
-  MACH.forEach(m=>{if(dumping&&(m.stage==='bag'||m.stage==='loma'))return;const s=S.stat[m.k];const busy=(s.run+s.down)/t;if(!best||busy>best.busy)best={k:m.k,name:m.name,stage:m.stage,busy,wait:(s.starved+s.blocked)/t};});
+  const t=Math.max(S.t,1);let best=null;
+  const dumping=(S.c.tote[0]+S.c.tote[1])>0.03*Math.max(1,S.c.bagged[0]+S.c.bagged[1]);
+  MACH.forEach(m=>{if(dumping&&(m.stage==='bag'||m.stage==='loma'))return;const s=S.stat[m.k];const busy=(s.run+s.down)/t;
+    if(!best||busy>best.busy)best={k:m.k,name:m.name,stage:m.stage,busy,wait:(s.starved+s.blocked)/t};});
   const pair={m1:'m2',m2:'m1',l1:'l2',l2:'l1'}[best.k];
-  if(pair){const s=S.stat[pair];const busy2=(s.run+s.down)/t;if(Math.abs(busy2-best.busy)<0.03)best.name=best.stage==='bag'?'the Mamata baggers':'the Lomas';}
+  if(pair&&!P.off[0]&&!P.off[1]){const s=S.stat[pair];if(Math.abs((s.run+s.down)/t-best.busy)<0.03)best.name=best.stage==='bag'?'the Mamata baggers':'the Lomas';}
   return best;
 }
 function bufferRows(cap){
   const v=P.vals,N=P.pickN,d=k=>P.stopsOn?P.stops[k][1]:0,line=cap.sorted[0].cpm/60;
-  const laneRate=i=>Math.min(v['m'+(i+1)+'Rate'],v['l'+(i+1)+'Rate'])*(1-v.reject/100)/60;
   return[
-    {id:'lane0',name:'Mamata 1 belt to BPA',unit:'pouches',up:'bag',down:'bpa',sugg:Math.ceil(N+laneRate(0)*(d('bpa')+v.pushTime)),why:'keeps Mamata 1 running through a typical BPA stop plus a cartridge push'},
-    {id:'lane1',name:'Mamata 2 belt to BPA',unit:'pouches',up:'bag',down:'bpa',sugg:Math.ceil(N+laneRate(1)*(d('bpa')+v.pushTime)),why:'keeps Mamata 2 running through a typical BPA stop plus a cartridge push'},
-    {id:'caseBuf',name:'Empty cases at BPA',unit:'cases',up:'er',down:'bpa',sugg:Math.ceil(N+line*d('er')),why:'covers one full set for the BPA plus enough to ride through a typical case erector stop'},
-    {id:'tapeBuf',name:'Cases before taper',unit:'cases',up:'bpa',down:'tape',sugg:Math.ceil(N+line*d('tape')),why:'leaves room for a full set pushed out by the BPA plus a typical taper stop'},
-    {id:'cwBuf',name:'Cases before checkweigher',unit:'cases',up:'tape',down:'cw',sugg:Math.max(2,Math.ceil(line*d('cw'))),why:'rides through a typical checkweigher or printer stop'},
-    {id:'palBuf',name:'Cases before palletizer',unit:'cases',up:'cw',down:'pal',sugg:Math.max(2,Math.ceil(line*Math.max(d('pal'),v.palPush+v.palNew))),why:'rides through a pallet change without stopping the cases behind it'},
+    {id:'caseBuf',name:'Empty cases at BPA',unit:'cases',up:'er',down:'bpa',sugg:Math.ceil(N+line*d('er')),why:'covers one full set for the BPA plus a typical case erector stop'},
+    {id:'tapeBuf',name:'Cases before taper',unit:'cases',up:'bpa',down:'tape',sugg:Math.ceil(N+line*Math.max(d('tape'),d('cw'),d('prn'))),why:'leaves room for a full set from the BPA plus a typical taper, checkweigher, or printer stop'},
+    {id:'palBuf',name:'Cases before ARB',unit:'cases',up:'tape',down:'pal',sugg:Math.max(2,Math.ceil(line*Math.max(d('arb'),d('pal'),palChange()))),why:'rides through a pallet change or a typical ARB or robot stop'},
   ].map(r=>({...r,cap:bufCap(r.id)}));
 }
 
 /* ---------- Rendering ---------- */
-const STATE_TEXT={idle:'Ready',run:'Running',starved:'Waiting for product',blocked:'Backed up',restart:'Restarting',down:'Stopped',change:'Changing pallet'};
-const f0=x=>Math.round(x).toLocaleString(), f1=x=>(Math.round(x*10)/10).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+const STATE_TEXT={idle:'Ready',off:'Shut down',run:'Running',starved:'Waiting for product',blocked:'Backed up',down:'Stopped',change:'Changing pallet',roll:'Changing roll'};
+const f0=x=>Math.round(x).toLocaleString(),f1=x=>(Math.round(x*10)/10).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
 const pct=x=>Math.round(x*100)+'%';
 const hm=s=>{const m=Math.floor(s/60);return Math.floor(m/60)+':'+String(m%60).padStart(2,'0');};
-
-function setCard(id,state,num,stateText){
-  const el=$('#c-'+id); el.className=(id==='bpa'?'bpa':'mc')+' st-'+state;
-  const stEl=id==='bpa'?$('#bpaState'):el.querySelector('.mc-state'); stEl.textContent=stateText||STATE_TEXT[state];
-  const n=id==='bpa'?$('#bpaNum'):el.querySelector('.mc-num'); n.textContent=f0(num);
+function setCard(id,state,num,text){
+  const el=$('#c-'+id);el.className=(id==='bpa'?'bpa':'mc')+(id==='pal'?' robot':'')+' st-'+state;
+  (id==='bpa'?$('#bpaState'):el.querySelector('.mc-state')).textContent=text||STATE_TEXT[state];
+  (id==='bpa'?$('#bpaNum'):el.querySelector('.mc-num')).textContent=f0(num);
 }
 function setBuf(id,val,cap,unit){
-  const el=$('#b-'+id); const bar=el.querySelector('.buf-bar');
-  bar.querySelector('i').style.width=Math.min(100,val/cap*100)+'%'; bar.classList.toggle('full',val>=cap);
+  const el=$('#b-'+id),bar=el.querySelector('.buf-bar');
+  bar.querySelector('i').style.width=Math.min(100,val/cap*100)+'%';bar.classList.toggle('full',val>=cap);
   el.querySelector('.buf-num').textContent=`${f0(val)} / ${f0(cap)} ${unit}`;
 }
 const WIRES=[['c-m1','b','c-l1','t'],['c-l1','b','b-lane0','t'],['c-m2','b','c-l2','t'],['c-l2','b','b-lane1','t'],
-  ['b-lane0','b','c-bpa','t',1],['b-lane1','b','c-bpa','t',1],['b-lane0','l','t-0','r',0,1],['b-lane1','r','t-1','l',0,1],
+  ['b-lane0','b','c-bpa','t',1],['b-lane1','b','c-bpa','t',1],['b-lane0','l','t-0','r',0,'dash'],['b-lane1','r','t-1','l',0,'dash'],
   ['c-er','t','b-caseBuf','b'],['b-caseBuf','l','c-bpa','r'],['c-bpa','l','b-tapeBuf','r'],['b-tapeBuf','b','c-tape','t'],
-  ['c-tape','b','b-cwBuf','t'],['b-cwBuf','b','c-cw','t'],['c-cw','b','b-palBuf','t'],['b-palBuf','r','c-pal','l']];
+  ['c-tape','b','b-palBuf','t'],['b-palBuf','r','c-pal','l'],
+  ['t-0','t','c-l1','l',0,'refeed','vh'],['t-1','t','c-l2','r',0,'refeed','vh']];
+let WPTS=[];
 function drawWires(){
-  const fl=$('#floor'),svg=$('#wires'); if(!fl)return; const fr=fl.getBoundingClientRect();
+  const fl=$('#floor'),svg=$('#wires');if(!fl)return;const fr=fl.getBoundingClientRect();
   const pt=(el,side)=>{const r=el.getBoundingClientRect();return[(side==='l'?r.left:side==='r'?r.right:r.left+r.width/2)-fr.left,(side==='t'?r.top:side==='b'?r.bottom:r.top+r.height/2)-fr.top];};
   let h='<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" stroke="none"/></marker></defs>';
   WPTS=[];
-  WIRES.forEach(([a,sa,b,sb,keepX,dash],i)=>{const A=document.getElementById(a),B=document.getElementById(b);if(!A||!B)return;
-    let[x1,y1]=pt(A,sa),[x2,y2]=pt(B,sb); if(keepX)x2=x1;
-    let pts; if(sa==='t'||sa==='b'){const my=(y1+y2)/2;pts=[[x1,y1],[x1,my],[x2,my],[x2,y2]];}else{const mx=(x1+x2)/2;pts=[[x1,y1],[mx,y1],[mx,y2],[x2,y2]];}
+  WIRES.forEach(([a,sa,b,sb,keepX,cls,mode],i)=>{
+    if(cls==='refeed'&&!P.refeed)return;
+    const A=document.getElementById(a),B=document.getElementById(b);if(!A||!B)return;
+    let[x1,y1]=pt(A,sa),[x2,y2]=pt(B,sb);if(keepX)x2=x1;
+    let pts;
+    if(mode==='vh')pts=[[x1,y1],[x1,y2],[x2,y2]];
+    else if(sa==='t'||sa==='b'){const my=(y1+y2)/2;pts=[[x1,y1],[x1,my],[x2,my],[x2,y2]];}
+    else{const mx=(x1+x2)/2;pts=[[x1,y1],[mx,y1],[mx,y2],[x2,y2]];}
     WPTS[i]=pts;
-    h+=`<path d="M${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L')}" marker-end="url(#ah)"${dash?' class="dash"':''}/>`;});
-  svg.setAttribute('viewBox',`0 0 ${fr.width} ${fr.height}`); $('#wireg').innerHTML=h;
+    h+=`<path d="M${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L')}" marker-end="url(#ah)"${cls?` class="${cls}"`:''}/>`;});
+  svg.setAttribute('viewBox',`0 0 ${fr.width} ${fr.height}`);$('#wireg').innerHTML=h;
 }
-/* Moving pouches: green = Mamata 1, orange = Mamata 2, blue = packed cases */
+window.addEventListener('resize',drawWires);
+
+/* Moving pouches: green = Mamata 1, orange = Mamata 2, red = empty cases, blue = packed cases */
 const DOTC={g:'#2E9E4F',o:'#E8822A',b:'#2F6FD6',r:'#D64545'};
 const ROUTES=[
-  {w:[0,1],c:'g',src:()=>S.c.bagged[0]},{w:[4],c:'g',big:1,src:()=>S.c.picks[0]},{w:[6],c:'g',src:()=>S.c.tote[0]},
-  {w:[2,3],c:'o',src:()=>S.c.bagged[1]},{w:[5],c:'o',big:1,src:()=>S.c.picks[1]},{w:[7],c:'o',src:()=>S.c.tote[1]},
+  {w:[0,1],c:'g',src:()=>S.c.bagged[0]},{w:[4],c:'g',big:1,src:()=>S.c.picks[0]},{w:[6],c:'g',src:()=>S.c.tote[0]},{w:[14],c:'g',src:()=>S.c.refed[0]},
+  {w:[2,3],c:'o',src:()=>S.c.bagged[1]},{w:[5],c:'o',big:1,src:()=>S.c.picks[1]},{w:[7],c:'o',src:()=>S.c.tote[1]},{w:[15],c:'o',src:()=>S.c.refed[1]},
   {w:[8],c:'r',src:()=>S.c.erected},{w:[9],c:'r',big:1,src:()=>S.c.loaded},
-  {w:[10],c:'b',big:1,src:()=>S.c.packed},{w:[11,12],c:'b',big:1,src:()=>S.c.taped},{w:[13,14],c:'b',big:1,src:()=>S.c.coded},{w:[15],c:'b',big:1,src:()=>S.c.palCases}];
-let WPTS=[],dots=[],lastA=0;
-let dotsOn=!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+  {w:[10],c:'b',big:1,src:()=>S.c.packed},{w:[11,12],c:'b',big:1,src:()=>S.c.taped},{w:[13],c:'b',big:1,src:()=>S.c.palCases}];
+let dots=[],lastA=0,dotsOn=!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 ROUTES.forEach(r=>{r.prev=0;r.pend=0;r.last=0;});
 function syncDots(){ROUTES.forEach(r=>{r.prev=r.src();r.pend=0;});dots=[];}
-function spawnDots(now){
-  ROUTES.forEach(r=>{const v=r.src(),d=v-r.prev;r.prev=v;if(!dotsOn||d<=0)return;
-    r.pend=Math.min(3,r.pend+d);
-    if(now-r.last>90){r.pend--;r.last=now;dots.push({r,dist:0});}});
-}
+function spawnDots(now){ROUTES.forEach(r=>{const v=r.src(),d=v-r.prev;r.prev=v;if(!dotsOn||d<=0)return;
+  r.pend=Math.min(3,r.pend+d);if(now-r.last>90){r.pend--;r.last=now;dots.push({r,dist:0});}});}
 function routePts(r){let pts=[];r.w.forEach(i=>{if(WPTS[i])pts=pts.concat(WPTS[i]);});return pts;}
 function posAt(pts,dist){for(let i=1;i<pts.length;i++){const[x1,y1]=pts[i-1],[x2,y2]=pts[i];const L=Math.hypot(x2-x1,y2-y1);
   if(dist<=L)return L?[x1+(x2-x1)*dist/L,y1+(y2-y1)*dist/L]:[x2,y2];dist-=L;}return null;}
 function animDots(ts){
   let dt=lastA?Math.min(0.1,(ts-lastA)/1000):0;lastA=ts;if(!running)dt=0;
   const g=document.getElementById('dotg');
-  if(g){
-    if(!dotsOn||!dots.length){if(g.firstChild)g.innerHTML='';}
+  if(g){if(!dotsOn||!dots.length){if(g.firstChild)g.innerHTML='';}
     else{let h='';dots=dots.filter(d=>{d.dist+=170*dt;const p=posAt(routePts(d.r),d.dist);if(!p)return false;
-      h+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${d.r.big?5:3.5}" fill="${DOTC[d.r.c]}"/>`;return true;});
-      g.innerHTML=h;}
-  }
+      h+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${d.r.big?5:3.5}" fill="${DOTC[d.r.c]}"/>`;return true;});g.innerHTML=h;}}
   requestAnimationFrame(animDots);
 }
-window.addEventListener('resize',drawWires);
+
 function renderLive(){
-  [0,1].forEach(i=>{const el=$('#t-'+i);el.querySelector('.mc-num').textContent=f0(S.c.tote[i]);el.classList.toggle('off',!P.overflow[i]);el.classList.toggle('active',P.overflow[i]&&S.t-S.toteAt[i]<3);});
   const v=P.vals,N=P.pickN,PC=P.perCase;
+  document.querySelectorAll('.offbtn').forEach(b=>{const off=P.off[+b.dataset.bag];b.textContent=off?'Turn back on':'Shut down';b.setAttribute('aria-pressed',String(off));});
   $('#clockText').textContent=`${hm(S.t)} of ${hm(S.end)}`;
   $('#clockBar').style.width=Math.min(100,S.t/S.end*100)+'%';
-  setCard('m1',S.st.m1,S.c.bagged[0]); setCard('m2',S.st.m2,S.c.bagged[1]);
-  setCard('l1',S.st.l1,S.c.passed[0]); setCard('l2',S.st.l2,S.c.passed[1]);
-  setCard('er',S.st.er,S.c.erected); setCard('tape',S.st.tape,S.c.taped); setCard('cw',S.st.cw,S.c.coded);
-  setCard('pal',S.st.pal,S.c.pallets); $('#palSub').textContent=`pallets, ${S.pal.on} of ${v.cpp} cases on this one`;
-  $('#palBar').style.width=(S.pal.on/v.cpp*100)+'%';
-  const b=S.bpa; let txt=STATE_TEXT[S.st.bpa];
+  ['m1','m2'].forEach((k,i)=>setCard(k,S.st[k],S.c.bagged[i],S.why[k]?S.why[k].replace(/^./,c=>c.toUpperCase()):null));
+  setCard('l1',S.st.l1,S.c.passed[0]);setCard('l2',S.st.l2,S.c.passed[1]);
+  setCard('er',S.st.er,S.c.erected);setCard('tape',S.st.tape,S.c.taped,S.why.tape);
+  setCard('pal',S.st.pal,S.c.pallets,S.why.pal);
+  $('#palSub').textContent=`pallets, ${S.pal.on} of ${v.cpp} cases on this one`;$('#palBar').style.width=(S.pal.on/v.cpp*100)+'%';
+  [0,1].forEach(i=>{const el=$('#t-'+i);el.querySelector('.mc-num').textContent=f0(S.toteNow[i]);
+    el.querySelector('.sub2').textContent=`${f0(S.c.tote[i])} diverted, ${f0(S.c.refed[i])} hand-fed back`;
+    el.classList.toggle('active',S.t-S.toteAt[i]<3);
+    const lane=$('#b-lane'+i),cap=N+v.accCap;
+    lane.querySelector('.buf-bar i').style.width=Math.min(100,(S.lane[i]+S.acc[i])/cap*100)+'%';
+    lane.querySelector('.buf-bar').classList.toggle('full',v.accCap>0&&S.acc[i]>=v.accCap);
+    lane.querySelector('.buf-num').textContent=`${S.lane[i]}/${N} at pick, ${S.acc[i]} gathering`;});
+  const b=S.bpa;let txt=STATE_TEXT[S.st.bpa];
   if(S.st.bpa==='starved')txt=b.wait==='cases'?'Waiting for empty cases':'Waiting for pouches';
   if(S.st.bpa==='blocked')txt='Can\'t push cases out, taper infeed full';
   if(S.st.bpa==='run')txt=b.phase==='push'?'Pushing stacks into cases':b.wait==='swap'?'Cartridge full, waiting on case swap':`Loading cartridge from Mamata ${b.last+1} belt`;
   setCard('bpa',S.st.bpa,S.c.packed,txt);
-  setBuf('lane0',S.lane[0],v.laneCap,'pouches'); setBuf('lane1',S.lane[1],v.laneCap,'pouches');
-  setBuf('caseBuf',S.caseBuf,v.caseCap,'cases'); setBuf('tapeBuf',S.tapeBuf,v.tapeCap,'cases');
-  setBuf('cwBuf',S.cwBuf,v.cwCap,'cases'); setBuf('palBuf',S.palBuf,v.palCap,'cases');
-  const grid=$('#caseGrid'); grid.className='cases'+(N===7?' n7':'');
-  if(grid.children.length!==N){grid.innerHTML='<div class="case"><i></i></div>'.repeat(N);}
-  const loaded=b.phase!=='needCases'||S.st.bpa==='idle'&&false;
-  let filled=(b.phase==='full'||b.phase==='push')?PC:b.picks; if(b.phase==='pick'&&v.pickTime>0)filled=b.picks+Math.min(1,1-b.timer/v.pickTime);
-  [...grid.children].forEach(c=>{c.classList.remove('empty');c.firstChild.style.height=(filled/PC*100)+'%';});
+  const lim=N===7?v.feed7:v.feed9,fd=$('#bpaFeed');
+  fd.textContent=`Pouch feed now ${f0(S.feedNow)}/min, limit ${lim} with the ${N} head`+(S.missP>0?`, missing about ${pct(S.missP)}`:'');
+  fd.classList.toggle('over',S.missP>0);
+  setBuf('caseBuf',S.caseBuf,v.caseCap,'cases');setBuf('tapeBuf',S.tapeBuf,v.tapeCap,'cases');setBuf('palBuf',S.palBuf,v.arbCap,'cases');
+  const grid=$('#caseGrid');grid.className='cases'+(N===7?' n7':'');
+  if(grid.children.length!==N)grid.innerHTML='<div class="case"><i></i></div>'.repeat(N);
+  let filled=(b.phase==='full'||b.phase==='push')?PC:b.picks;if(b.phase==='pick'&&v.pickTime>0)filled=b.picks+Math.min(1,1-b.timer/v.pickTime);
+  [...grid.children].forEach(c=>{c.firstChild.style.height=(filled/PC*100)+'%';});
   const caseTxt={needCases:'waiting for empties',swap:'swapping',ready:'empties in place',filled:'full, waiting for room at the taper'}[S.bcase.phase];
   $('#bpaDetail').textContent=`Cartridge: ${Math.min(PC,Math.floor(filled))} of ${PC} pouches stacked in each of ${N} slots. Cases: ${caseTxt}.`;
 }
 function renderResults(){
   const v=P.vals,PC=P.perCase,t=S.t,cap=capacity();
-  const hrs=t/3600, cph=hrs>0?S.c.palCases/hrs:0, bagMax=(v.m1Rate+v.m2Rate)/PC*60;
-  const k=[
-    [f0(S.c.palCases),'cases palletized'],[t>60?f0(cph):'–','cases per hour'],[f0(S.c.pallets),'pallets finished'],
-    [t>60?pct(cph/bagMax):'–','of what the Mamatas could make at set speeds'],[f0(S.c.rejected),'pouches rejected'],[f0(S.c.tote[0]+S.c.tote[1]),'pouches sent to overflow totes']];
+  const hrs=t/3600,cph=hrs>0?S.c.palCases/hrs:0,bagMax=((P.off[0]?0:v.m1Rate)+(P.off[1]?0:v.m2Rate))/PC*60;
+  const tot=S.c.tote[0]+S.c.tote[1],left=S.toteNow[0]+S.toteNow[1];
+  const k=[[f0(S.c.palCases),'cases palletized'],[t>60?f0(cph):'–','cases per hour'],[f0(S.c.pallets),'pallets finished'],
+    [t>60&&bagMax>0?pct(cph/bagMax):'–','of what the running Mamatas could make at set speeds'],
+    [f0(tot),'pouches diverted to totes'],[f0(S.c.refed[0]+S.c.refed[1]),'pouches hand-fed back'],[f0(left),'pouches still in totes'],[f0(S.c.rejected),'pouches rejected at the Lomas']];
   $('#kpis').innerHTML=k.map(([a,b])=>`<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join('');
-  const maxC=Math.max(...cap.stages.map(s=>s.cpm));
-  const c1=cap.sorted[0].key,c2=cap.sorted[1].key;
+  const maxC=Math.max(...cap.stages.map(s=>s.cpm),1e-9),c1=cap.sorted[0].key,c2=cap.sorted[1].key;
   $('#capBars').innerHTML=cap.stages.map(s=>{const cls=s.key===c1?'c1':s.key===c2?'c2':'';
     const tag=s.key===c1?'<span class="tag c1">Constraint</span>':s.key===c2?'<span class="tag c2">Next</span>':'';
     return`<div class="caprow ${cls}"><span>${s.name}${tag}</span><span class="bar"><i style="width:${s.cpm/maxC*100}%"></i></span><span class="num">${f1(s.cpm)}</span></div>`;}).join('');
   $('#utilBars').innerHTML=MACH.map(m=>{const s=S.stat[m.k],T=Math.max(t,1e-9);
     if(t<1)return`<div class="utilrow"><span>${m.name}</span><span class="stack"></span></div>`;
     const seg=(c,x,lbl)=>x>0?`<i class="${c}" style="width:${x/T*100}%" title="${lbl} ${pct(x/T)}"></i>`:'';
-    return`<div class="utilrow"><span>${m.name}</span><span class="stack" aria-label="${m.name}: running ${pct(s.run/T)}, waiting ${pct(s.starved/T)}, backed up ${pct(s.blocked/T)}, stopped ${pct(s.down/T)}">${seg('r',s.run,'Running')}${seg('s',s.starved,'Waiting')}${seg('b',s.blocked,'Backed up')}${seg('d',s.down,'Stopped')}</span></div>`;}).join('');
+    return`<div class="utilrow"><span>${m.name}</span><span class="stack" aria-label="${m.name}: running ${pct(s.run/T)}, waiting ${pct(s.starved/T)}, backed up ${pct(s.blocked/T)}, stopped ${pct(s.down/T)}">${seg('r',s.run,'Running')}${seg('s',s.starved,'Waiting')}${seg('b',s.blocked,'Backed up')}${seg('d',s.down,'Stopped')}${seg('x',s.off,'Shut down')}</span></div>`;}).join('');
   const rows=bufferRows(cap);
   $('#bufTable').innerHTML='<tr><th>Buffer</th><th>Holds now</th><th>Average / most seen</th><th>Time full</th><th>Suggested</th></tr>'+rows.map(r=>{
     const B=S.buf[r.id],near=r.up===c1||r.down===c1;
@@ -668,22 +716,29 @@ function renderResults(){
   $('#insights').innerHTML=insights(cap,rows).map(x=>`<li>${x}</li>`).join('');
 }
 function insights(cap,rows){
-  const v=P.vals,PC=P.perCase,t=S.t,out=[];
+  const v=P.vals,PC=P.perCase,N=P.pickN,t=S.t,out=[],y=1-v.reject/100;
   const[c1,c2]=cap.sorted;
-  out.push(`On paper the slowest step is <b>${c1.name}</b> at ${f1(c1.cpm)} cases/min. Next in line is <b>${c2.name}</b> at ${f1(c2.cpm)} cases/min, so speeding up ${c1.name} only adds output until you reach about ${f1(c2.cpm)} cases/min.`);
-  if(t<120){out.push('Run the shift (or press "Run full shift now") to see how stops and buffers play out.');return out;}
-  const cph=S.c.palCases/(t/3600),bagMax=(v.m1Rate+v.m2Rate)/PC*60;
-  out.push(`The line palletized about <b>${f0(cph)} cases an hour</b>. At their set speeds the Mamatas could feed ${f0(bagMax)} cases an hour, so you got ${pct(cph/bagMax)} of that.`);
-  const tot=S.c.tote[0]+S.c.tote[1],made=S.c.bagged[0]+S.c.bagged[1];
-  if(tot>0)out.push(`<b>${f0(tot)} pouches</b> (${pct(tot/Math.max(1,made))} of what the Mamatas made) went to the overflow totes. That keeps the baggers running, but each one is hand rework, and it means the line after the belts can't keep up with the baggers at these speeds.`);
+  out.push(`On paper the slowest step is <b>${c1.name}</b> at ${f1(c1.cpm)} cases/min. Next in line is <b>${c2.name}</b> at ${f1(c2.cpm)} cases/min, so improving ${c1.name} only adds output until you reach about ${f1(c2.cpm)} cases/min.`);
+  const lim=N===7?v.feed7:v.feed9,both=((P.off[0]?0:v.m1Rate)+(P.off[1]?0:v.m2Rate))*y;
+  if(both>lim)out.push(`With both running Mamatas at full speed, about <b>${f0(both)} pouches/min</b> feed the BPA. That's over the ${lim} pouches/min limit for the ${N} head, so the smart tracks miss pouches whenever both are running`+(both>=v.feedStall?`, and at ${v.feedStall} they stop processing altogether.`:'.'));
+  if(t<120){out.push('Run the shift (or press "Run full shift now") to see how stops, roll changes, and buffers play out.');return out;}
+  const cph=S.c.palCases/(t/3600),bagMax=((P.off[0]?0:v.m1Rate)+(P.off[1]?0:v.m2Rate))/PC*60;
+  [0,1].forEach(i=>{if(P.off[i])out.push(`<b>Mamata ${i+1} is shut down</b>, so the BPA is picking only from Mamata ${2-i}'s belt.`);});
+  if(bagMax>0)out.push(`The line palletized about <b>${f0(cph)} cases an hour</b>. At their set speeds the running Mamatas could feed ${f0(bagMax)} cases an hour, so you got ${pct(cph/bagMax)} of that.`);
+  const tot=S.c.tote[0]+S.c.tote[1],made=S.c.bagged[0]+S.c.bagged[1],miss=S.c.missed[0]+S.c.missed[1],div=S.c.diverted[0]+S.c.diverted[1];
+  const refed=S.c.refed[0]+S.c.refed[1],left=S.toteNow[0]+S.toteNow[1];
+  if(tot>0){let x=`<b>${f0(tot)} pouches</b> (${pct(tot/Math.max(1,made))} of what the Mamatas made) went to the totes: ${f0(miss)} missed by the smart tracks because the feed was over the limit, and ${f0(div)} dumped when a diverter fired because the BPA wasn't ready.`;
+    if(P.refeed)x+=` ${f0(refed)} were hand-fed back while a Mamata was stopped.`;
+    if(left>0)x+=` <b>${f0(left)} are still in totes</b> at the end of the shift, about ${f0(left/v.refeedRate)} minutes of hand-feeding at ${v.refeedRate} pouches/min.`;
+    out.push(x);}
+  if(P.rollsOn&&(S.rollTime[0]+S.rollTime[1])>0)out.push(`Film and zipper roll changes took Mamata 1 about ${f0(S.rollTime[0]/60)} min and Mamata 2 about ${f0(S.rollTime[1]/60)} min this shift.`);
   const bn=simBottleneck(S);
-  out.push(`In this run <b>${bn.name}</b> ${/^the /.test(bn.name)?'were':'was'} busy ${pct(bn.busy)} of the shift and waited only ${pct(bn.wait)} of it. That's where today's limit is.`+(bn.stage!==c1.key?' It differs from the paper answer because stops and buffer sizes are costing time there.':''));
+  out.push(`In this run <b>${bn.name}</b> ${/^the /.test(bn.name)?'were':'was'} busy ${pct(bn.busy)} of the shift and waited only ${pct(bn.wait)} of it. That's where today's limit is.`);
   const sb=S.stat.bpa;
   if(S.bpaWaitCases/t>0.04)out.push(`The BPA waited on empty cases ${pct(S.bpaWaitCases/t)} of the shift. Speed up the Lantech or let more empty cases queue at the BPA.`);
   if(S.bpaWaitPouches/t>0.08)out.push(`The BPA waited on pouches ${pct(S.bpaWaitPouches/t)} of the shift, so the gantry has spare capacity and the baggers are setting the pace.`);
   if(sb.blocked/t>0.04)out.push(`The BPA couldn't push full cases out ${pct(sb.blocked/t)} of the shift because the taper infeed was full.`);
-  ['m1','m2'].forEach(k=>{const x=S.stat[k].blocked/t;if(x>0.04)out.push(`${NAME[k]} was stopped or restarting ${pct(x)} of the shift because its belt backed up. Each of those stops also costs the ${v.restart} sec restart.`);});
-  if(S.stat.cw.blocked/t>0.04)out.push(`Cases backed up behind the palletizer ${pct(S.stat.cw.blocked/t)} of the shift. Pallet changes are the usual cause.`);
+  if(S.stat.tape.blocked/t>0.04)out.push(`The taper station sat backed up ${pct(S.stat.tape.blocked/t)} of the shift because the ARB couldn't take more cases. Pallet changes and the ARB's speed are the usual causes.`);
   rows.filter(r=>r.cap<r.sugg&&(r.up===c1.key||r.down===c1.key)).forEach(r=>out.push(`Next to the constraint, the ${r.name} buffer holds ${r.cap} ${r.unit}. About ${r.sugg} ${r.unit} ${r.why}.`));
   return out;
 }
@@ -694,7 +749,7 @@ let S=newSim(),running=false,lastTs=0,lastRes=0,carry=0;
 function setRunBtn(){$('#runBtn').textContent=running?'Pause':(S.t>0&&S.t<S.end?'Resume':'Run');}
 function loop(ts){
   if(!running)return;
-  const real=lastTs?Math.min(0.1,(ts-lastTs)/1000):0; lastTs=ts;
+  const real=lastTs?Math.min(0.1,(ts-lastTs)/1000):0;lastTs=ts;
   carry+=real*(+$('#speed').value);
   while(carry>=DT&&S.t<S.end){step(S,DT);carry-=DT;}
   renderLive();spawnDots(ts);
@@ -702,21 +757,15 @@ function loop(ts){
   if(S.t>=S.end){running=false;setRunBtn();renderResults();return;}
   requestAnimationFrame(loop);
 }
-$('#runBtn').addEventListener('click',()=>{
-  if(S.t>=S.end)S=newSim();
-  running=!running;setRunBtn();
-  if(running){lastTs=0;carry=0;requestAnimationFrame(loop);}
-});
+$('#runBtn').addEventListener('click',()=>{if(S.t>=S.end){S=newSim();syncDots();}running=!running;setRunBtn();if(running){lastTs=0;carry=0;requestAnimationFrame(loop);}});
 $('#resetBtn').addEventListener('click',()=>{running=false;S=newSim();syncDots();setRunBtn();renderAll();});
 $('#fullBtn').addEventListener('click',()=>{running=false;S=newSim();while(S.t<S.end)step(S,DT);syncDots();setRunBtn();renderAll();});
 $('#rangeBtn').addEventListener('click',()=>{const on=document.body.classList.toggle('edit-ranges');$('#rangeBtn').textContent=on?'Hide min and max':'Edit min and max';});
 $('#defaultsBtn').addEventListener('click',()=>{P=defaults();syncControls();changed();});
-
-buildControls();syncControls();
-const _changed=changed;
-changed=function(){_changed();syncDots();setRunBtn();if(running){lastTs=0;carry=0;}};
-renderAll();setRunBtn();
+document.querySelectorAll('.offbtn').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.bag;P.off[i]=!P.off[i];save();renderAll();}));
 $('#dotsOn').checked=dotsOn;$('#dotsOn').addEventListener('change',e=>{dotsOn=e.target.checked;if(!dotsOn)dots=[];});
+
+buildControls();syncControls();renderAll();setRunBtn();
 requestAnimationFrame(animDots);
 })();
 </script>
